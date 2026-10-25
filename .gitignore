@@ -1,0 +1,36 @@
+# Brainstorm companion (mockup tạm)
+.superpowers/
+
+# Bí mật
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.jks
+*.p8
+*.p12
+*.mobileprovision
+
+# Dependency & build output
+node_modules/
+.expo/
+dist/
+web-build/
+android/
+ios/
+coverage/
+
+# Metro / TS cache
+.metro-health-check*
+*.tsbuildinfo
+
+# Log
+*.log
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# OS
+.DS_Store
+Thumbs.db
