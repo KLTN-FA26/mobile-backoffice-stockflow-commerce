@@ -1,0 +1,6 @@
+{
+  "webRepoEnv": "STOCKFLOW_WEB_REPO",
+  "webRepoDefault": "../stockflow-ui",
+  "webRef": "origin/develop",
+  "files": []
+}

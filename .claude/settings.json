@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "includeCoAuthoredBy": false,
+  "permissions": {
+    "allow": [
+      "Bash(pnpm run:*)",
+      "Bash(pnpm exec:*)",
+      "Bash(pnpm dlx:*)",
+      "Bash(pnpm sync:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git branch:*)",
+      "Bash(git stash:*)",
+      "Read(D:/FPTU/Capstone/UIDesign/stockflow-ui/**)",
+      "Read(D:/FPTU/docs/**)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.local)",
+      "Read(./.env.development)",
+      "Read(./.env.development.local)",
+      "Read(./.env.production)",
+      "Read(./.env.production.local)",
+      "Read(./.env.test)",
+      "Read(./.env.test.local)",
+      "Bash(npm install:*)",
+      "Bash(npm ci:*)",
+      "Bash(yarn:*)"
+    ],
+    "additionalDirectories": ["D:/FPTU/Capstone/UIDesign/stockflow-ui", "D:/FPTU/docs"]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [".claude/hooks/guard-protected-files.mjs"],
+            "timeout": 10,
+            "statusMessage": "Kiểm tra file được bảo vệ"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [".claude/hooks/guard-package-manager.mjs"],
+            "timeout": 10,
+            "statusMessage": "Kiểm tra package manager"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [".claude/hooks/format-changed-file.mjs"],
+            "timeout": 45,
+            "statusMessage": "Format file vừa sửa"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [".claude/hooks/remind-validate.mjs"],
+            "timeout": 20,
+            "statusMessage": "Kiểm tra quy trình verify (app/ + src/)"
+          }
+        ]
+      }
+    ]
+  }
+}

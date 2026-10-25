@@ -4,6 +4,7 @@
 # Bí mật
 .env
 .env.*
+.env.local
 !.env.example
 *.pem
 *.key
@@ -17,8 +18,11 @@ node_modules/
 .expo/
 dist/
 web-build/
+expo-env.d.ts
 android/
 ios/
+.kotlin/
+*.orig.*
 coverage/
 
 # Metro / TS cache
