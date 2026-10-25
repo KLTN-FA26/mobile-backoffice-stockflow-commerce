@@ -11,6 +11,25 @@ import type * as TestingLibrary from "@testing-library/react-native";
 
 setUpTests();
 
+// react-native-gesture-handler 3 needs two more stand-ins under Jest than its own jestSetup gives
+// (checked against 3.3.0, which Jest loads from `lib/module/`):
+// - loading it queues a call for the UI runtime holder, which the JS-only worklets that Jest uses
+//   throws for, failing the whole test file ("getUIRuntimeHolder is not supported on web");
+// - `GestureDetector` throws without a `GestureHandlerRootView` above it, and tests render
+//   components, not the root layout (which mounts the real one).
+jest.mock(
+  "react-native-gesture-handler/lib/module/handlers/gestures/installUIRuntimeBindings",
+  () => ({
+    installUIRuntimeBindings: () => undefined,
+  }),
+);
+jest.mock(
+  "react-native-gesture-handler/lib/module/v3/detectors/useEnsureGestureHandlerRootView",
+  () => ({
+    useEnsureGestureHandlerRootView: () => undefined,
+  }),
+);
+
 // TanStack Query keeps a gcTime timer (5 minutes) for every unobserved query and mutation. Unref
 // them, so that a finished test file does not hold its Jest worker open. They stay real timers:
 // fake timers and advanceTimersByTime behave as usual.
@@ -42,10 +61,16 @@ jest.mock(
   () => jest.requireActual("@react-native-community/netinfo/jest/netinfo-mock.js"),
   { virtual: true },
 );
-jest.mock("@gorhom/bottom-sheet", () => jest.requireActual("@gorhom/bottom-sheet/mock"), {
+// The library's own mock with a BottomSheetModal that can be closed (see the file for why).
+jest.mock("@gorhom/bottom-sheet", () => jest.requireActual("./mocks/gorhom-bottom-sheet"), {
   virtual: true,
 });
 jest.mock("sonner-native", () => jest.requireActual("./mocks/sonner-native"), { virtual: true });
+jest.mock(
+  "@react-native-community/datetimepicker",
+  () => jest.requireActual("./mocks/datetimepicker"),
+  { virtual: true },
+);
 
 // FlashList ships a setup script that registers its own mock; run it once the package exists.
 function isInstalled(moduleName: string): boolean {

@@ -20,4 +20,14 @@ export const SCAN_MOBILE_LIMITS = {
 export const UI_LIMITS = {
   maxFontSizeMultiplier: 1.3,
   searchDebounceMs: 300,
+  /**
+   * After a pull-to-refresh, how long the pull spinner waits for the reload to show as running
+   * before it gives up (a reload that finishes within one render never shows).
+   */
+  pullSettleGraceMs: 500,
+  /** Một `Sheet` cuộn được cao tối đa tỉ lệ này của chiều cao cửa sổ. */
+  sheetMaxHeightRatio: 0.85,
 } as const;
+
+/** Ngôn ngữ của bộ chọn ngày hệ thống (iOS); Android theo ngôn ngữ máy. */
+export const PICKER_LOCALE = "vi-VN";

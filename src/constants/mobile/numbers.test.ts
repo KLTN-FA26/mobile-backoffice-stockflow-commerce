@@ -1,4 +1,4 @@
-import { SCAN_MOBILE_LIMITS, SESSION_LIMITS, UI_LIMITS } from "./numbers";
+import { PICKER_LOCALE, SCAN_MOBILE_LIMITS, SESSION_LIMITS, UI_LIMITS } from "./numbers";
 
 describe("mobile number limits", () => {
   it("keeps the session timings from the spec", () => {
@@ -16,6 +16,12 @@ describe("mobile number limits", () => {
 
   it("keeps the scan and UI limits from the spec", () => {
     expect(SCAN_MOBILE_LIMITS).toEqual({ dedupeWindowMs: 1500, positiveFeedbackMs: 1500 });
-    expect(UI_LIMITS).toEqual({ maxFontSizeMultiplier: 1.3, searchDebounceMs: 300 });
+    expect(UI_LIMITS).toEqual({
+      maxFontSizeMultiplier: 1.3,
+      searchDebounceMs: 300,
+      pullSettleGraceMs: 500,
+      sheetMaxHeightRatio: 0.85,
+    });
+    expect(PICKER_LOCALE).toBe("vi-VN");
   });
 });

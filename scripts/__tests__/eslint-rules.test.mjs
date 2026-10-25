@@ -24,6 +24,8 @@ const FIXTURE_FILES = {
   "src/features/receipt/index.ts": "export const y = 1;\n",
   "src/lib/utils.ts": "export const cn = () => '';\n",
   "src/lib/api/client.ts": "export const api = {};\n",
+  "src/lib/api/error.ts": "export class ApiError extends Error {}\n",
+  "src/lib/api/load-error.ts": "export const classifyLoadError = () => 'server';\n",
   "src/lib/platform/storage.ts": "export const kv = {};\n",
   "src/components/shared/.gitkeep": "",
 };
@@ -74,6 +76,28 @@ describe("architecture boundaries", () => {
   it("shared component importing lib/api is an error", async () => {
     const ids = await ruleIdsFor(
       'import { api } from "@/lib/api/client";\nexport const X = api;\n',
+      "src/components/shared/X.tsx",
+    );
+    assert.ok(ids.includes("import/no-restricted-paths"), ids.join(", "));
+  });
+
+  it("shared component importing the pure load-error helper is allowed", async () => {
+    const load = await ruleIdsFor(
+      'import { classifyLoadError } from "@/lib/api/load-error";\nexport const X = classifyLoadError;\n',
+      "src/components/shared/X.tsx",
+    );
+    assert.ok(!load.includes("import/no-restricted-paths"), load.join(", "));
+
+    const error = await ruleIdsFor(
+      'import { ApiError } from "@/lib/api/error";\nexport const X = ApiError;\n',
+      "src/components/shared/X.tsx",
+    );
+    assert.ok(!error.includes("import/no-restricted-paths"), error.join(", "));
+  });
+
+  it("shared component importing the api client is still an error next to the exception", async () => {
+    const ids = await ruleIdsFor(
+      'import { classifyLoadError } from "@/lib/api/load-error";\nimport { api } from "@/lib/api/client";\nexport const X = [classifyLoadError, api];\n',
       "src/components/shared/X.tsx",
     );
     assert.ok(ids.includes("import/no-restricted-paths"), ids.join(", "));

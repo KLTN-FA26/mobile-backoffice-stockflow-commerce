@@ -125,7 +125,15 @@ export function createConfig(rootDir) {
               ...featureZones(rootDir),
               {
                 target: "./src/components/shared",
-                from: ["./src/features", "./src/lib/api"],
+                from: "./src/features",
+                message: "Component dùng chung không được biết về feature hay API client.",
+              },
+              {
+                // The pure error helpers are the one exception (R26): display needs
+                // `classifyLoadError`, `LoadErrorKind` and `ApiError.traceId`. Every other api module stays out.
+                target: "./src/components/shared",
+                from: "./src/lib/api",
+                except: ["./error.ts", "./load-error.ts"],
                 message: "Component dùng chung không được biết về feature hay API client.",
               },
             ],

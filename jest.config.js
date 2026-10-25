@@ -32,6 +32,10 @@ module.exports = {
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",
     "^expo-sqlite/kv-store$": "<rootDir>/src/test/mocks/kv-store.ts",
+    // lucide-react-native's "react-native" export condition points at .mjs files, which Jest always
+    // loads as native ESM (never through babel). Its CommonJS build works.
+    "^lucide-react-native$":
+      "<rootDir>/node_modules/lucide-react-native/dist/cjs/lucide-react-native.js",
   },
   transformIgnorePatterns: [
     `/node_modules/(?!(${TRANSFORMED_PACKAGES.join("|")}))`,
