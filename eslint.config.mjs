@@ -13,7 +13,20 @@ import { configs as tseslintConfigs } from "typescript-eslint";
  *
  * Every entry needs a one-line reason (which file, which rule, why the web code is exempt).
  */
-const VERBATIM_OVERRIDES = [];
+const VERBATIM_OVERRIDES = [
+  // verbatim từ web — sửa ở web rồi sync:pull
+  // idempotency.ts: import/order — web để dòng trống giữa hai `import type`, mobile gom mọi type import vào một nhóm.
+  { files: ["src/lib/api/idempotency.ts"], rules: { "import/order": "off" } },
+  // query-factory.ts: import/order — web viết hai khối import không cách dòng trống; no-non-null-assertion — `fetcher(id!, signal)` đã được chặn bởi `enabled: !!id`.
+  {
+    files: ["src/lib/api/query-factory.ts"],
+    rules: { "import/order": "off", "@typescript-eslint/no-non-null-assertion": "off" },
+  },
+  // stale-refetch.ts: import/order — web đặt `import type` của react-query trước `./query-factory`, mobile sort type import theo alphabet.
+  { files: ["src/lib/api/stale-refetch.ts"], rules: { "import/order": "off" } },
+  // Can.tsx: import/order — web đặt `import type` của react trước `../me-permissions`, mobile sort type import theo alphabet.
+  { files: ["src/lib/auth/components/Can.tsx"], rules: { "import/order": "off" } },
+];
 
 const IGNORES = ["dist/", ".expo/", "node_modules/", "android/", "ios/", "coverage/"];
 

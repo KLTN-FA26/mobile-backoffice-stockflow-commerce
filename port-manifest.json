@@ -2,5 +2,433 @@
   "webRepoEnv": "STOCKFLOW_WEB_REPO",
   "webRepoDefault": "../stockflow-ui",
   "webRef": "origin/develop",
-  "files": []
+  "files": [
+    {
+      "source": "src/constants/auth.ts",
+      "target": "src/constants/auth.ts",
+      "mode": "verbatim",
+      "sourceBlob": "c842dab6ba879567963b88f7104290711689c389"
+    },
+    {
+      "source": "src/constants/brand.ts",
+      "target": "src/constants/brand.ts",
+      "mode": "verbatim",
+      "sourceBlob": "0f03e4143bb53d43f3f51bf2fb58f46e0db7f8cb"
+    },
+    {
+      "source": "src/constants/dashboard.ts",
+      "target": "src/constants/dashboard.ts",
+      "mode": "verbatim",
+      "sourceBlob": "46655fcb616a281940f68907a80ed376e3f915e7"
+    },
+    {
+      "source": "src/constants/index.ts",
+      "target": "src/constants/index.ts",
+      "mode": "verbatim",
+      "sourceBlob": "bbeae0a53921262dbae0ffb8583cb4a989798c07"
+    },
+    {
+      "source": "src/constants/inventory.ts",
+      "target": "src/constants/inventory.ts",
+      "mode": "verbatim",
+      "sourceBlob": "617aff59a2a967a7181e95c2563ae9cd24132019"
+    },
+    {
+      "source": "src/constants/labels-delivery-mode.ts",
+      "target": "src/constants/labels-delivery-mode.ts",
+      "mode": "verbatim",
+      "sourceBlob": "05a3cf2d2d4552b0ef4e34d0a51277efa66747df"
+    },
+    {
+      "source": "src/constants/labels-fulfillment-lines.ts",
+      "target": "src/constants/labels-fulfillment-lines.ts",
+      "mode": "verbatim",
+      "sourceBlob": "a8562905839e2726cb44f00fe2ee4b32733c23f0"
+    },
+    {
+      "source": "src/constants/labels-identity.ts",
+      "target": "src/constants/labels-identity.ts",
+      "mode": "verbatim",
+      "sourceBlob": "fa4db764a33f3c50117bf8b6f498b8fd4a022d6f"
+    },
+    {
+      "source": "src/constants/labels-inventory-item.ts",
+      "target": "src/constants/labels-inventory-item.ts",
+      "mode": "verbatim",
+      "sourceBlob": "084e53d0fd4bc57868da34d824b01344cb369ae5"
+    },
+    {
+      "source": "src/constants/labels-load-estimate.ts",
+      "target": "src/constants/labels-load-estimate.ts",
+      "mode": "verbatim",
+      "sourceBlob": "766bac13263845a40b64ac8c70a9890f7b18c89e"
+    },
+    {
+      "source": "src/constants/labels-load-plan-editor.ts",
+      "target": "src/constants/labels-load-plan-editor.ts",
+      "mode": "verbatim",
+      "sourceBlob": "11d4e056c497043589cda93273e8a5d525fad1b6"
+    },
+    {
+      "source": "src/constants/labels-load-plan-print.ts",
+      "target": "src/constants/labels-load-plan-print.ts",
+      "mode": "verbatim",
+      "sourceBlob": "0d53aad4a667c4de55f0e07630b083ae559ed20d"
+    },
+    {
+      "source": "src/constants/labels-load-plan-transfer.ts",
+      "target": "src/constants/labels-load-plan-transfer.ts",
+      "mode": "verbatim",
+      "sourceBlob": "e9b7fc00cb56fc2f598ce37abacee4f1d2bf4749"
+    },
+    {
+      "source": "src/constants/labels-load-plan.ts",
+      "target": "src/constants/labels-load-plan.ts",
+      "mode": "verbatim",
+      "sourceBlob": "269fc68491495e102d5c1a0f0aa17e83e011232d"
+    },
+    {
+      "source": "src/constants/labels-load-planning.ts",
+      "target": "src/constants/labels-load-planning.ts",
+      "mode": "verbatim",
+      "sourceBlob": "a4a9fd5a4ae975fb5018887374faa30b5dd438f8"
+    },
+    {
+      "source": "src/constants/labels-order.ts",
+      "target": "src/constants/labels-order.ts",
+      "mode": "verbatim",
+      "sourceBlob": "e4298891a3d0e44132b6d1e6795044a524642de5"
+    },
+    {
+      "source": "src/constants/labels-packing.ts",
+      "target": "src/constants/labels-packing.ts",
+      "mode": "verbatim",
+      "sourceBlob": "799d7865dc8854a3dc9cc86d9e54c06f4c0dc55a"
+    },
+    {
+      "source": "src/constants/labels-product.ts",
+      "target": "src/constants/labels-product.ts",
+      "mode": "verbatim",
+      "sourceBlob": "28bcb9f9fb3c3abdda598649c847f309f3ed06f3"
+    },
+    {
+      "source": "src/constants/labels-shipping-ftl.ts",
+      "target": "src/constants/labels-shipping-ftl.ts",
+      "mode": "verbatim",
+      "sourceBlob": "b5ff8eef81f61ecbaef09b6d5bab9cf253eb098e"
+    },
+    {
+      "source": "src/constants/labels-shipping.ts",
+      "target": "src/constants/labels-shipping.ts",
+      "mode": "verbatim",
+      "sourceBlob": "5a8b54dcc835380bb62ba16b56bd91f044230deb"
+    },
+    {
+      "source": "src/constants/labels-supplier-item.ts",
+      "target": "src/constants/labels-supplier-item.ts",
+      "mode": "verbatim",
+      "sourceBlob": "a72b7cbe4fe1fd004944a256fc580bc1adddb86d"
+    },
+    {
+      "source": "src/constants/labels-taxonomy.ts",
+      "target": "src/constants/labels-taxonomy.ts",
+      "mode": "verbatim",
+      "sourceBlob": "1434047fbf8593781a38b6876b6c7e6431450e7f"
+    },
+    {
+      "source": "src/constants/labels-transfer-pack.ts",
+      "target": "src/constants/labels-transfer-pack.ts",
+      "mode": "verbatim",
+      "sourceBlob": "c066317d0f16f119a7f6e493609adca65a77fa01"
+    },
+    {
+      "source": "src/constants/labels-transfer.ts",
+      "target": "src/constants/labels-transfer.ts",
+      "mode": "verbatim",
+      "sourceBlob": "c4266a83dac972db2f01f8b13d17a982ad8d7c48"
+    },
+    {
+      "source": "src/constants/labels-vehicle-type.ts",
+      "target": "src/constants/labels-vehicle-type.ts",
+      "mode": "verbatim",
+      "sourceBlob": "fe5710d6891ee57392cf868529ae11ba5e142928"
+    },
+    {
+      "source": "src/constants/labels.ts",
+      "target": "src/constants/labels.ts",
+      "mode": "verbatim",
+      "sourceBlob": "37ef0a4679b2b7236b31f8e431daf8b396374e77"
+    },
+    {
+      "source": "src/constants/load-planning.ts",
+      "target": "src/constants/load-planning.ts",
+      "mode": "verbatim",
+      "sourceBlob": "4b642e3268f4b7af8b3df6a968cc4426d93e1bb1"
+    },
+    {
+      "source": "src/constants/move.ts",
+      "target": "src/constants/move.ts",
+      "mode": "verbatim",
+      "sourceBlob": "24e661053e9a4a27a7d1a6437c1cc40a63cac6bf"
+    },
+    {
+      "source": "src/constants/numbers.ts",
+      "target": "src/constants/numbers.ts",
+      "mode": "verbatim",
+      "sourceBlob": "16d241c5e793af297247c5402b224c47cc18e159"
+    },
+    {
+      "source": "src/constants/permissions.ts",
+      "target": "src/constants/permissions.ts",
+      "mode": "verbatim",
+      "sourceBlob": "9442c644a67e87a4f1772e8f7364e13fd5de5aba"
+    },
+    {
+      "source": "src/constants/query-roots.ts",
+      "target": "src/constants/query-roots.ts",
+      "mode": "verbatim",
+      "sourceBlob": "56826ae538f74c52aa2b01df064f1406d3a7cbff"
+    },
+    {
+      "source": "src/constants/reporting.ts",
+      "target": "src/constants/reporting.ts",
+      "mode": "verbatim",
+      "sourceBlob": "7860b0e1826c6fced34fa02554644355c4433d5b"
+    },
+    {
+      "source": "src/constants/routes.ts",
+      "target": "src/constants/routes.ts",
+      "mode": "verbatim",
+      "sourceBlob": "053c5f3153f3819808653bc5f272c6a0e23bc4dc"
+    },
+    {
+      "source": "src/constants/statuses.ts",
+      "target": "src/constants/statuses.ts",
+      "mode": "verbatim",
+      "sourceBlob": "c1d861ad427836c0a02ce1dbfd673092533c0f3c"
+    },
+    {
+      "source": "src/constants/storage-keys.ts",
+      "target": "src/constants/storage-keys.ts",
+      "mode": "verbatim",
+      "sourceBlob": "1bd53c2cf0b3be64b2bfa393a5734f26ee5b8278"
+    },
+    {
+      "source": "src/constants/table.ts",
+      "target": "src/constants/table.ts",
+      "mode": "verbatim",
+      "sourceBlob": "70a4e36a175aafbad7c8642b7cca1ef078756b31"
+    },
+    {
+      "source": "src/hooks/use-debounced-value.ts",
+      "target": "src/hooks/use-debounced-value.ts",
+      "mode": "verbatim",
+      "sourceBlob": "9839042576a324b250cb4424b5a25cb8691238e0"
+    },
+    {
+      "source": "src/lib/api/error.test.ts",
+      "target": "src/lib/api/error.test.ts",
+      "mode": "adapted",
+      "sourceBlob": "198a1d5e15a90925630a74e088ebe687f9906a38",
+      "note": "vitest→jest"
+    },
+    {
+      "source": "src/lib/api/error.ts",
+      "target": "src/lib/api/error.ts",
+      "mode": "verbatim",
+      "sourceBlob": "f4da1662ba749ad5d195b7496f568e671c867b30"
+    },
+    {
+      "source": "src/lib/api/idempotency.test.ts",
+      "target": "src/lib/api/idempotency.test.ts",
+      "mode": "adapted",
+      "sourceBlob": "800132adcafd47e222c2731df74be2a3ccbbf152",
+      "note": "vitest→jest"
+    },
+    {
+      "source": "src/lib/api/idempotency.ts",
+      "target": "src/lib/api/idempotency.ts",
+      "mode": "verbatim",
+      "sourceBlob": "57a8f3194dd89a79fd745bd94faa981428c5741f"
+    },
+    {
+      "source": "src/lib/api/load-error.ts",
+      "target": "src/lib/api/load-error.ts",
+      "mode": "verbatim",
+      "sourceBlob": "a87b47236b7afb8af6ec86ff17ffcba7d3d5d173"
+    },
+    {
+      "source": "src/lib/api/page-schema.ts",
+      "target": "src/lib/api/page-schema.ts",
+      "mode": "verbatim",
+      "sourceBlob": "f90ec936d17c344be00b49a6ebd1767a3b3d769d"
+    },
+    {
+      "source": "src/lib/api/query-client.ts",
+      "target": "src/lib/api/query-client.ts",
+      "mode": "verbatim",
+      "sourceBlob": "e087da6de94bc68311b696a3cc4a6e21e5e3e613"
+    },
+    {
+      "source": "src/lib/api/query-factory.test.tsx",
+      "target": "src/lib/api/query-factory.test.tsx",
+      "mode": "adapted",
+      "sourceBlob": "c261f6c074528b1c43cbe231b80d6e665eb59383",
+      "note": "vitest→jest; @testing-library/react→@testing-library/react-native (renderHook/act async → await); giữ nguyên case; chú thích về toast trỏ sang query-factory-toast.test.tsx (chỉ có ở mobile)"
+    },
+    {
+      "source": "src/lib/api/query-factory.ts",
+      "target": "src/lib/api/query-factory.ts",
+      "mode": "verbatim",
+      "sourceBlob": "0c344886b2adf7baa574a06f684cd46c29d5d077"
+    },
+    {
+      "source": "src/lib/api/stale-refetch.test.tsx",
+      "target": "src/lib/api/stale-refetch.test.tsx",
+      "mode": "adapted",
+      "sourceBlob": "656b6afda04c068fd6eab7daf76e85379354685a",
+      "note": "vitest→jest; @testing-library/react→@testing-library/react-native (renderHook/act async → await); createMutation<{ id: string }, void>(…) viết thành createMutation(async (_input: { id: string }): Promise<void> => …) vì lint no-invalid-void-type; giữ nguyên case"
+    },
+    {
+      "source": "src/lib/api/stale-refetch.ts",
+      "target": "src/lib/api/stale-refetch.ts",
+      "mode": "verbatim",
+      "sourceBlob": "9302ccf4c37b492b4369450d850eff7780d81033"
+    },
+    {
+      "source": "src/lib/auth/auth-schemas.ts",
+      "target": "src/lib/auth/auth-schemas.ts",
+      "mode": "verbatim",
+      "sourceBlob": "e20abc1a1613f8011bf75c17eabac6206a22bce3"
+    },
+    {
+      "source": "src/lib/auth/components/Can.tsx",
+      "target": "src/lib/auth/components/Can.tsx",
+      "mode": "verbatim",
+      "sourceBlob": "21cfc136e573289346a60f1dfac7b40ce5ce5806"
+    },
+    {
+      "source": "src/lib/auth/login-error.ts",
+      "target": "src/lib/auth/login-error.ts",
+      "mode": "verbatim",
+      "sourceBlob": "e914803b17144792cb0fbe511d72b782e2f4e4f1"
+    },
+    {
+      "source": "src/lib/auth/me-permissions.test.tsx",
+      "target": "src/lib/auth/me-permissions.test.tsx",
+      "mode": "adapted",
+      "sourceBlob": "faad22b51aa1b52cd86747543f486e7ed44d39d3",
+      "note": "vitest→jest; @testing-library/react→@testing-library/react-native (renderHook async → await; case 403 bỏ act bọc ngoài renderHook); bỏ field impersonatedRole khỏi useAuthStore.setState (store mobile không có impersonation); case 'đang tải → false' giữ nguyên nhưng mock api.get chờ một gate promise, vì renderHook của RNTL 14 chạy trong async act nên mock trả ngay sẽ xong trước khi assert trạng thái tải; giữ nguyên case"
+    },
+    {
+      "source": "src/lib/auth/me-permissions.ts",
+      "target": "src/lib/auth/me-permissions.ts",
+      "mode": "verbatim",
+      "sourceBlob": "0b4e6f9d206de82256d5f2dcf78f7d9270bac308"
+    },
+    {
+      "source": "src/lib/domain/index.ts",
+      "target": "src/lib/domain/index.ts",
+      "mode": "verbatim",
+      "sourceBlob": "8edc323180efcc0cc204432fa2a7784db160c8eb"
+    },
+    {
+      "source": "src/lib/domain/lifecycle.ts",
+      "target": "src/lib/domain/lifecycle.ts",
+      "mode": "adapted",
+      "sourceBlob": "365680025093c4472620340e4baf947e8befa7b3",
+      "note": "types từ lib/domain/status-types; khối import đưa lên đầu file (import/first, eslint --fix)"
+    },
+    {
+      "source": "src/lib/domain/receipt-lifecycle.test.ts",
+      "target": "src/lib/domain/receipt-lifecycle.test.ts",
+      "mode": "adapted",
+      "sourceBlob": "0344fb49e903c0b985a9fa5ae4edb88690176c75",
+      "note": "vitest→jest"
+    },
+    {
+      "source": "src/lib/domain/status-map.ts",
+      "target": "src/lib/domain/status-map.ts",
+      "mode": "verbatim",
+      "sourceBlob": "963e9c20fc8074e055c26f798247d19fd9a10347"
+    },
+    {
+      "source": "src/lib/mock-data.ts",
+      "target": "src/lib/domain/status-types.ts",
+      "mode": "adapted",
+      "sourceBlob": "7ebcd527867fa88978a0e3ac011a17a4a847c405",
+      "note": "chỉ giữ type trạng thái/vai trò/kho"
+    },
+    {
+      "source": "src/lib/format/date.ts",
+      "target": "src/lib/format/date.ts",
+      "mode": "verbatim",
+      "sourceBlob": "4b9b6ded98a4672482beeb2787f97ed693497023"
+    },
+    {
+      "source": "src/lib/format/index.ts",
+      "target": "src/lib/format/index.ts",
+      "mode": "verbatim",
+      "sourceBlob": "d806d767b2184f8f4634a32247c074c9f96c7fd7"
+    },
+    {
+      "source": "src/lib/format/money.test.ts",
+      "target": "src/lib/format/money.test.ts",
+      "mode": "adapted",
+      "sourceBlob": "fb02a5918e00e571125ced21705ec5a18d692c3e",
+      "note": "vitest→jest"
+    },
+    {
+      "source": "src/lib/format/money.ts",
+      "target": "src/lib/format/money.ts",
+      "mode": "verbatim",
+      "sourceBlob": "09c030ce0c9c9f9bc15986c624be160a9ec9d15b"
+    },
+    {
+      "source": "src/lib/format/number.test.ts",
+      "target": "src/lib/format/number.test.ts",
+      "mode": "adapted",
+      "sourceBlob": "cbaa3e9491ec414025676ae41953b13b2f818b98",
+      "note": "vitest→jest"
+    },
+    {
+      "source": "src/lib/format/number.ts",
+      "target": "src/lib/format/number.ts",
+      "mode": "verbatim",
+      "sourceBlob": "8dcbfddad3f1e6babc4132ef1a83bb1853683c32"
+    },
+    {
+      "source": "src/lib/status-map.ts",
+      "target": "src/lib/status-map.ts",
+      "mode": "adapted",
+      "sourceBlob": "fa70e7d334134f9150d99b0a91b7cd7fc2d11816",
+      "note": "types từ lib/domain/status-types"
+    },
+    {
+      "source": "src/lib/validation/primitives.test.ts",
+      "target": "src/lib/validation/primitives.test.ts",
+      "mode": "adapted",
+      "sourceBlob": "d50a75942b83ab9bc503d5decf977b9c4e403cfa",
+      "note": "vitest→jest"
+    },
+    {
+      "source": "src/lib/validation/primitives.ts",
+      "target": "src/lib/validation/primitives.ts",
+      "mode": "verbatim",
+      "sourceBlob": "41e9e85b04a94a27c1642bee7b9647a3fe341457"
+    },
+    {
+      "source": "src/lib/validation/sku.test.ts",
+      "target": "src/lib/validation/sku.test.ts",
+      "mode": "adapted",
+      "sourceBlob": "a73f8f25967b41d160ac6952698be315a9c77cf5",
+      "note": "vitest→jest"
+    },
+    {
+      "source": "src/lib/validation/sku.ts",
+      "target": "src/lib/validation/sku.ts",
+      "mode": "verbatim",
+      "sourceBlob": "450001e2af02138578d3c03becc8c6c7d86b2e16"
+    }
+  ]
 }

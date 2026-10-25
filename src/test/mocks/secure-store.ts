@@ -12,3 +12,8 @@ export async function setItemAsync(key: string, value: string, _options?: unknow
 export async function deleteItemAsync(key: string, _options?: unknown): Promise<void> {
   data.delete(key);
 }
+
+/** Test-only: empties the store. `src/test/setup.ts` calls it after every test. */
+export function __clear(): void {
+  data.clear();
+}

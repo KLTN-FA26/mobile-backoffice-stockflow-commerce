@@ -6,6 +6,7 @@ import type * as CameraMock from "./mocks/expo-camera";
 import type * as HapticsMock from "./mocks/expo-haptics";
 import type * as KvStoreMock from "./mocks/kv-store";
 import type * as SecureStoreMock from "./mocks/secure-store";
+import type * as SonnerMock from "./mocks/sonner-native";
 
 // The libraries below are installed by later tasks, so they are loaded by name (and typed from the
 // mock files) instead of imported.
@@ -71,5 +72,14 @@ describe("jest setup", () => {
     await player.seekTo(0);
     player.play();
     expect(player.play).toHaveBeenCalledTimes(1);
+  });
+
+  it("registers spies for sonner-native", () => {
+    const { Toaster, toast } = jest.requireMock<typeof SonnerMock>("sonner-native");
+
+    toast.success("saved", { description: "details" });
+
+    expect(toast.success).toHaveBeenCalledWith("saved", { description: "details" });
+    expect(jest.isMockFunction(Toaster)).toBe(true);
   });
 });
