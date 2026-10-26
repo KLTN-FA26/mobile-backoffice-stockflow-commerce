@@ -48,6 +48,23 @@ Nguồn: spec §4.2 (hàng "Danh sách"), §3.5, §2.4. Thay cho trang danh sác
 
 Chọn nhánh rỗng bằng "có bộ lọc đang bật không" — không gộp hai loại rỗng làm một.
 
+## Phải làm khi dựng màn Danh sách đầu tiên (đã quyết, chưa có code — P1)
+
+`ListScreen` nhận `status`, `items`, `onRetry`, `onEndReached`… từ **một adapter của màn** (chuyển `useInfiniteQuery` + `useListParams` thành props). Màn đầu tiên
+viết adapter đó và **phải** xử lý ba điểm sau (chưa có chỗ nào làm — đừng để lọt):
+
+1. **Thử lại của `RefetchFailedNotice`** (hàng dưới danh sách khi tải trang kế/refetch lỗi nhưng còn dòng): gọi `fetchNextPage()` khi `isFetchNextPageError`,
+   ngược lại mới `refetch()`. Truyền thẳng `refetch` làm `onRetry` thì lỗi tải trang kế sẽ tải lại **trang đầu** và làm mất vị trí cuộn.
+2. **`onEndReached` của FlashList chỉ bắn khi chạm đáy, không bắn lại nếu đáy vẫn ở đó.** `ListScreen` bỏ qua sự kiện này khi đang `isRefetching` /
+   `isFetchingNextPage` / dữ liệu giữ chỗ (để `fetchNextPage` không huỷ lần reload đang chạy) — nên sự kiện tới đúng lúc reload bị nuốt và danh sách đứng ở đáy
+   mà không tải thêm. Adapter phải **phát lại**: khi lần tải kết thúc mà `hasNextPage` còn và danh sách vẫn đang ở đáy → gọi `fetchNextPage()` một lần.
+3. **Khử trùng dòng giữa các trang theo khoá** (`keyExtractor` / `getItemId`): trang offset chồng nhau khi dữ liệu đổi giữa hai lần tải, nên hai trang có thể
+   cùng một id; React/FlashList cảnh báo trùng khoá và dòng nhân đôi. Làm phẳng `pages` rồi lọc theo id (giữ lần xuất hiện đầu) trước khi đưa vào `items`.
+
+Cũng ở adapter: ánh xạ trạng thái query → `status` (`isPending`/`isError`/`isSuccess`; query bị tắt vì không có quyền đọc thì **không** dùng `ListScreen` — xem
+`ListScreenProps`), và dựng `params` thành object **ổn định** (tính lại mỗi render làm `queryKey` đổi theo tham chiếu nếu không cẩn thận). FAB tránh mép an toàn
+là việc của màn chủ.
+
 ## Test bắt buộc (§8.2)
 
 Skeleton · 2 loại rỗng · lỗi · cuộn thêm. Danh sách có mutation (chọn nhiều, đổi hãng…) thêm test action-gating theo `testing.md`.

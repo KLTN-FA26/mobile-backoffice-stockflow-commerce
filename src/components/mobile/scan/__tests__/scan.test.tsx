@@ -4,12 +4,15 @@
  * are the library mocks (expo-camera: permission and frames, see src/test/mocks/expo-camera) and,
  * for the field alone, the router's `push` (those tests render no navigator).
  */
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { act, render, screen, userEvent } from "@testing-library/react-native";
 import { router } from "expo-router";
 import { renderRouter } from "expo-router/testing-library";
 import { AppState, Linking, Text } from "react-native";
 
 import { MOBILE_LABELS, MOBILE_ROUTES, SCAN_MOBILE_LIMITS } from "@/constants/mobile";
+
+import { Sheet } from "@/components/ui";
 
 import {
   __cameraViewProps,
@@ -330,6 +333,24 @@ describe("ScanField", () => {
     await renderField({ feedback: { tone: "positive", message: "Đã quét PKG-1" } });
 
     expect(screen.getByText("Đã quét PKG-1")).toBeOnTheScreen();
+  });
+
+  it("warns in development when it is put inside a sheet, not outside one", async () => {
+    // scanning.md: no ScanField inside a Sheet (the camera opens over it, a station keeps its
+    // field on screen). Only a development warning: nothing changes for the user.
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => undefined);
+    const field = <ScanField label={LABEL} placeholder={PLACEHOLDER} onSubmit={jest.fn()} />;
+    const { rerender } = await render(field, { wrapper: BottomSheetModalProvider });
+    expect(warn).not.toHaveBeenCalled();
+
+    await rerender(
+      <Sheet open onOpenChange={jest.fn()} title="Quét">
+        {field}
+      </Sheet>,
+    );
+
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(String(warn.mock.calls[0]?.[0])).toContain("ScanField");
   });
 });
 

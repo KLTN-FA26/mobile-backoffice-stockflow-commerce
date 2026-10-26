@@ -2,6 +2,8 @@ import { BottomSheetTextInput } from "@gorhom/bottom-sheet";
 import { cssInterop } from "nativewind";
 import { TextInput } from "react-native";
 
+import { UI_LIMITS } from "@/constants/mobile";
+
 import { useInSheet } from "./sheet-context";
 
 import type { ComponentProps, Ref } from "react";
@@ -27,7 +29,12 @@ const SheetTextInput = cssInterop(SheetField, { className: "style" });
 /**
  * The text field to use anywhere a form control takes typed text: the sheet-aware input inside a
  * `Sheet`, a plain `TextInput` elsewhere (R30). `Input`, `SearchField` and `QuantityStepper` render it.
+ * Font scaling stops at the UI limit, as for `Text`, unless the caller says otherwise.
  */
-export function TextField(props: TextFieldProps) {
+export function TextField({
+  maxFontSizeMultiplier = UI_LIMITS.maxFontSizeMultiplier,
+  ...rest
+}: TextFieldProps) {
+  const props = { ...rest, maxFontSizeMultiplier };
   return useInSheet() ? <SheetTextInput {...props} /> : <TextInput {...props} />;
 }

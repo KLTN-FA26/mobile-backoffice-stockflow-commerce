@@ -61,8 +61,15 @@ message ends with the last line of the project explanation — there is no tooli
 receipt list screen`.
 - A blank line, then a body that explains **why**, wrapped at ~72 chars — matching this codebase's
   habit of comments that justify a decision rather than restate the diff.
-- Conventional-commit types (`feat`, `fix`, `refactor`, `docs`, `test`, `chore`) with a scope — see
-  the section above for the exact rules enforced by commitlint.
+- Conventional-commit types (`feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `ci`, `build`…) with a scope.
+
+**What commitlint enforces** (husky `commit-msg`, `commitlint.config.mjs`; a violation blocks the commit):
+
+- the scope, when given, must be one of `receipt` `inventory` `inventory-item` `transfer` `move` `order` `picking`
+  `packing` `shipping` `auth` `shell` `shared` `ui` `scan` `sync` `config` `deps` `ci` `rules` — an unknown scope is an
+  **error** (level 2), not a warning;
+- the subject starts in lower case; the header is at most 100 characters; every body line is at most 100 characters;
+- a blank line between header and body.
 
 ## Committer identity — each contributor sets their OWN, per-repository
 

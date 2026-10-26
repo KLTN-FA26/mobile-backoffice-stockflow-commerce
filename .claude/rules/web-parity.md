@@ -21,7 +21,8 @@ Nguồn: spec §6, §7, D7. Nghiệp vụ, mã quyền, action-gating, thông b�
 | `verbatim` | Bản sao y nguyên                                   | Nội dung target == `git show <webRef>:<source>`                                               | **KHÔNG** (hook chặn)   |
 | `adapted`  | Bản chuyển thể (đổi import, `vi`→`jest`, thay API) | Blob hiện tại của source tại `webRef` == `sourceBlob` đã ghi; khác → "web đã đổi, cần rà lại" | Có, theo quy trình dưới |
 
-Entry: `{ source, target, mode, sourceBlob, note? }`. `adapted` **phải có `note`** nói rõ đã đổi gì so với web.
+Entry: `{ source, target, mode, sourceBlob, note? }`. `adapted` **phải có `note` không rỗng** nói rõ đã đổi gì so với web — `readManifest` từ chối manifest thiếu note
+(`sync:check` và mọi script sync đều dừng) và `pnpm sync:add --mode adapted` đòi `--note "<text>"`. `verbatim` thì không cần note.
 
 ## Lệnh
 
@@ -43,9 +44,10 @@ Muốn so với web mới nhất: người dùng tự `git fetch` ở repo web �
 3. **Chuyển `verbatim` → `adapted`:** sửa `port-manifest.json` trước (`mode`, `note`), rồi mới sửa file; sửa xong `pnpm sync:ack <target>`.
 4. **`sync:check` báo `source-changed` (adapted):** đọc diff phía web (`git -C <repo web> diff <sourceBlob> <webRef>:<source>`), port thay đổi cần thiết vào
    file mobile, rồi `pnpm sync:ack <target>`.
-5. **Phạm vi copy (§6.2):** `src/constants/**` toàn bộ = verbatim (giữ cả file load-plan/vehicle-type để `index.ts` y nguyên, không dùng tới); `lib/format`,
+5. **Phạm vi copy (§6.2):** `src/constants/*.ts` toàn bộ = verbatim (giữ cả file load-plan/vehicle-type để `index.ts` y nguyên, không dùng tới; `src/constants/mobile/**` là của mobile, mục 6); `lib/format`,
    `lib/validation`, `lib/api/{error,idempotency,page-schema,load-error,stale-refetch,query-factory,query-client}`, `lib/domain/lifecycle`, `lib/status-map`,
-   `lib/auth/{me-permissions,login-error}`, `lib/references` = verbatim nếu không import API web / `mock-data`, còn lại adapted;
+   `lib/auth/{me-permissions,login-error}`, `lib/references` = verbatim nếu không import API web / `mock-data`, còn lại adapted (đã có: `lib/auth/components/Can.tsx` — adapted từ R55, giữ
+   quyền đã biết khi refetch lỗi, web nên sửa theo; `PermissionBoundary` viết lại cho RN);
    `features/<in-scope>/{schemas,input-schemas,lifecycle,selectors,errors,status-helpers,…}.ts` = verbatim/adapted theo import;
    `features/*/{api,queries,mutations}.ts` = **adapted** (đổi client, bỏ đường BFF, kv-store thay sessionStorage); test của các file trên = adapted
    (`vi.*` → `jest.*`, giữ nguyên case); component `*.tsx` = **không copy**, viết mới cho RN.

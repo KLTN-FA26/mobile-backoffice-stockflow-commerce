@@ -1,7 +1,14 @@
-import { act, render, screen, userEvent, within } from "@testing-library/react-native";
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
+import {
+  act,
+  render as renderScreen,
+  screen,
+  userEvent,
+  within,
+} from "@testing-library/react-native";
 import { Plus } from "lucide-react-native";
 import { createRef, useState } from "react";
-import { BackHandler, Dimensions } from "react-native";
+import { AccessibilityInfo, BackHandler, Dimensions, Platform } from "react-native";
 
 import { SHEET_LABELS, UI_LIMITS } from "@/constants/mobile";
 
@@ -9,6 +16,7 @@ import {
   Badge,
   Button,
   Checkbox,
+  IconButton,
   Input,
   RadioGroup,
   Separator,
@@ -17,11 +25,14 @@ import {
   Switch,
   Text,
   Textarea,
+  TextField,
 } from "@/components/ui";
+import { SHEET_BACKGROUND_TEST_ID } from "@/components/ui/SheetParts";
 
 import {
   __userDismissSheets,
   BACKDROP_PRESS_PROP,
+  SHEET_ANIMATION_DURATION_PROP,
   SHEET_INPUT_PROP,
   SHEET_MAX_HEIGHT_PROP,
   SHEET_PAN_CLOSE_PROP,
@@ -29,7 +40,13 @@ import {
 } from "@/test/mocks/gorhom-bottom-sheet";
 
 import type { SemanticTone } from "@/lib/domain/status-types";
+import type { ReactElement } from "react";
 import type { TextInputInstance } from "react-native";
+
+/** Like the app (and `renderWithProviders`): sheets render through the provider's portal. */
+function render(ui: ReactElement) {
+  return renderScreen(ui, { wrapper: BottomSheetModalProvider });
+}
 
 describe("Text", () => {
   it("text numeric sets tabular-nums", async () => {
@@ -157,6 +174,87 @@ describe("Button", () => {
   });
 });
 
+describe("IconButton", () => {
+  it("icon button is a 44 × 44 button named by its label", async () => {
+    const onPress = jest.fn();
+    const user = userEvent.setup();
+    await render(<IconButton icon={Plus} accessibilityLabel="Thêm dòng" onPress={onPress} />);
+
+    const button = screen.getByRole("button", { name: "Thêm dòng" });
+    expect(button).toHaveStyle({ width: 44, height: 44 });
+    expect(button.props.hitSlop).toBeUndefined();
+    expect(button).toBeEnabled();
+    await user.press(button);
+    expect(onPress).toHaveBeenCalledTimes(1);
+  });
+
+  it("disabled icon button ignores press and dims", async () => {
+    const onPress = jest.fn();
+    const user = userEvent.setup();
+    await render(
+      <IconButton icon={Plus} accessibilityLabel="Thêm dòng" disabled onPress={onPress} />,
+    );
+
+    const button = screen.getByRole("button", { name: "Thêm dòng" });
+    expect(button).toBeDisabled();
+    expect(button.props.className).toContain("opacity-50");
+    await user.press(button);
+    expect(onPress).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [52, undefined],
+    [42, 1],
+    [40, 2],
+  ] as const)("icon button %s px wide reaches 44pt of touch area", async (size, hitSlop) => {
+    await render(
+      <IconButton icon={Plus} accessibilityLabel="Thêm dòng" size={size} onPress={jest.fn()} />,
+    );
+
+    const button = screen.getByRole("button", { name: "Thêm dòng" });
+    expect(button).toHaveStyle({ width: size, height: size });
+    expect(button.props.hitSlop).toBe(hitSlop);
+  });
+
+  it("icon button with checked is a toggle that reports its state", async () => {
+    const button = (checked: boolean) => (
+      <IconButton
+        icon={Plus}
+        accessibilityLabel="Hiện mật khẩu"
+        checked={checked}
+        onPress={jest.fn()}
+      />
+    );
+    const { rerender } = await render(button(false));
+    expect(screen.getByRole("togglebutton", { name: "Hiện mật khẩu" })).toHaveProp(
+      "accessibilityState",
+      expect.objectContaining({ checked: false }),
+    );
+
+    await rerender(button(true));
+    expect(screen.getByRole("togglebutton", { name: "Hiện mật khẩu" })).toHaveProp(
+      "accessibilityState",
+      expect.objectContaining({ checked: true }),
+    );
+  });
+
+  it("outline icon button is a bordered surface, ghost only tints when pressed", async () => {
+    await render(
+      <>
+        <IconButton icon={Plus} accessibilityLabel="Viền" variant="outline" onPress={jest.fn()} />
+        <IconButton icon={Plus} accessibilityLabel="Trơn" onPress={jest.fn()} />
+      </>,
+    );
+
+    const outline = String(screen.getByRole("button", { name: "Viền" }).props.className);
+    expect(outline).toContain("border-border-default");
+    expect(outline).toContain("bg-bg-surface");
+    const ghost = String(screen.getByRole("button", { name: "Trơn" }).props.className);
+    expect(ghost).not.toContain("border");
+    expect(ghost).toContain("active:bg-bg-muted");
+  });
+});
+
 describe("Input", () => {
   it("input label is accessibility label", async () => {
     await render(<Input label="Mã SKU" />);
@@ -205,14 +303,73 @@ describe("Input", () => {
 
     expect(screen.getByLabelText("Mã SKU")).toHaveProp(
       "accessibilityHint",
-      "Nhập mã Bắt buộc nhập",
+      "Nhập mã. Bắt buộc nhập",
     );
   });
 
-  it("input without error leaves the field hint to the caller", async () => {
-    await render(<Input label="Mã SKU" hint="Tối đa 20 ký tự" />);
+  it("input without error reads its hint with the field, after the caller's", async () => {
+    const { rerender } = await render(<Input label="Mã SKU" hint="Tối đa 20 ký tự" />);
+    expect(screen.getByLabelText("Mã SKU")).toHaveProp("accessibilityHint", "Tối đa 20 ký tự");
+
+    await rerender(<Input label="Mã SKU" accessibilityHint="Nhập mã" hint="Tối đa 20 ký tự" />);
+    expect(screen.getByLabelText("Mã SKU")).toHaveProp(
+      "accessibilityHint",
+      "Nhập mã. Tối đa 20 ký tự",
+    );
+  });
+
+  it("input with neither hint nor error leaves the field hint unset", async () => {
+    await render(<Input label="Mã SKU" />);
 
     expect(screen.getByLabelText("Mã SKU").props.accessibilityHint).toBeUndefined();
+  });
+
+  it("input has its error spoken when it appears (iOS has no live regions)", async () => {
+    const announce = jest
+      .spyOn(AccessibilityInfo, "announceForAccessibility")
+      .mockImplementation(() => undefined);
+    announce.mockClear();
+    const { rerender } = await render(<Input label="Mã SKU" />);
+    expect(announce).not.toHaveBeenCalled();
+
+    await rerender(<Input label="Mã SKU" error="Bắt buộc nhập" />);
+
+    expect(announce).toHaveBeenCalledTimes(1);
+    expect(announce).toHaveBeenCalledWith("Bắt buộc nhập");
+    announce.mockRestore();
+  });
+
+  it("text field caps font scaling at the UI limit unless the caller overrides it", async () => {
+    await render(
+      <>
+        <TextField accessibilityLabel="mặc định" />
+        <TextField accessibilityLabel="ghi đè" maxFontSizeMultiplier={1} />
+      </>,
+    );
+
+    expect(screen.getByLabelText("mặc định")).toHaveProp(
+      "maxFontSizeMultiplier",
+      UI_LIMITS.maxFontSizeMultiplier,
+    );
+    expect(screen.getByLabelText("ghi đè")).toHaveProp("maxFontSizeMultiplier", 1);
+  });
+
+  it("input puts its trailing control beside the field, above the message", async () => {
+    await render(
+      <Input
+        label="Mật khẩu"
+        error="Bắt buộc nhập"
+        trailing={<Button label="Hiện" variant="secondary" onPress={jest.fn()} />}
+      />,
+    );
+
+    const field = screen.getByLabelText("Mật khẩu");
+    const trailing = screen.getByRole("button", { name: "Hiện" });
+    expect(trailing.parent).toBe(field.parent);
+    const row = field.parent;
+    if (row === null) throw new Error("the field has no parent");
+    expect(within(row).queryByRole("alert")).toBeNull();
+    expect(screen.getByRole("alert")).toHaveTextContent("Bắt buộc nhập");
   });
 
   it("input is 48px tall", async () => {
@@ -462,6 +619,88 @@ describe("Sheet", () => {
     // None of the library's English defaults ("Bottom sheet backdrop", "Tap to close...") may leak.
     expect(screen.queryByLabelText(/bottom sheet/i, { hidden: true })).toBeNull();
     expect(screen.queryByHintText(/bottom sheet/i, { hidden: true })).toBeNull();
+  });
+
+  it("sheet background is a token surface that screen readers skip", async () => {
+    await render(
+      <Sheet open onOpenChange={jest.fn()} title="Chọn kho">
+        <Text>Nội dung</Text>
+      </Sheet>,
+    );
+
+    const background = screen.getByTestId(SHEET_BACKGROUND_TEST_ID, {
+      includeHiddenElements: true,
+    });
+    expect(background).toHaveProp("accessible", false);
+    expect(background).toHaveProp("importantForAccessibility", "no");
+    expect(background.props.className).toContain("bg-bg-surface");
+    expect(background.props.className).toContain("rounded-md");
+    expect(screen.queryByLabelText(/bottom sheet/i, { hidden: true })).toBeNull();
+  });
+
+  it("sheet announces its title once each time it opens, on Android too", async () => {
+    const os = Platform.OS;
+    Object.defineProperty(Platform, "OS", { configurable: true, get: () => "android" });
+    const announce = jest
+      .spyOn(AccessibilityInfo, "announceForAccessibility")
+      .mockImplementation(() => undefined);
+    announce.mockClear();
+    const sheet = (open: boolean, body: string) => (
+      <Sheet open={open} onOpenChange={jest.fn()} title="Chọn kho">
+        <Text>{body}</Text>
+      </Sheet>
+    );
+    try {
+      const { rerender } = await render(sheet(false, "a"));
+      expect(announce).not.toHaveBeenCalled();
+
+      await rerender(sheet(true, "a"));
+      await rerender(sheet(true, "b"));
+      expect(announce).toHaveBeenCalledTimes(1);
+      expect(announce).toHaveBeenCalledWith("Chọn kho");
+
+      await rerender(sheet(false, "b"));
+      await rerender(sheet(true, "b"));
+      expect(announce).toHaveBeenCalledTimes(2);
+    } finally {
+      Object.defineProperty(Platform, "OS", { configurable: true, get: () => os });
+      announce.mockRestore();
+    }
+  });
+
+  it("sheet hides the screen behind it from VoiceOver while open", async () => {
+    const view = (open: boolean) => (
+      <>
+        <Text>Màn hình</Text>
+        <Sheet open={open} onOpenChange={jest.fn()} title="Chọn kho">
+          <Text>Nội dung</Text>
+        </Sheet>
+      </>
+    );
+    const { rerender } = await render(view(true));
+
+    // iOS skips the siblings of a view marked modal (as these queries do): the sheet's outermost
+    // view, backdrop included, sits next to the screens, which stay mounted underneath.
+    expect(screen.getByText("Nội dung")).toBeTruthy();
+    expect(screen.getByLabelText(SHEET_LABELS.backdropLabel)).toBeTruthy();
+    expect(screen.queryByText("Màn hình")).toBeNull();
+    expect(screen.getByText("Màn hình", { includeHiddenElements: true })).toBeTruthy();
+
+    await rerender(view(false));
+    expect(screen.getByText("Màn hình")).toBeTruthy();
+  });
+
+  it("sheet moves in 180 ms (motion 120-180 ms)", async () => {
+    await render(
+      <Sheet open onOpenChange={jest.fn()} title="Chọn kho">
+        <Text>Nội dung</Text>
+      </Sheet>,
+    );
+
+    expect(screen.getByLabelText("Chọn kho", { hidden: true })).toHaveProp(
+      SHEET_ANIMATION_DURATION_PROP,
+      180,
+    );
   });
 
   it("sheet content is labelled with the title and not grouped into one element", async () => {

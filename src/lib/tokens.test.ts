@@ -18,8 +18,9 @@ type TailwindConfig = {
   presets: unknown[];
   content: string[];
   theme: {
+    colors: Record<string, string>;
     extend: {
-      colors: Record<string, string>;
+      borderColor: Record<string, string>;
       borderRadius: Record<string, string>;
       fontFamily: Record<string, string>;
     };
@@ -170,12 +171,23 @@ describe("shape tokens", () => {
 describe("tailwind config", () => {
   const config = jest.requireActual<TailwindConfig>("../../tailwind.config.js");
 
-  it("exposes every token", () => {
-    const { colors } = config.theme.extend;
+  it("exposes every token and only the tokens, plus transparent and current", () => {
+    const { colors } = config.theme;
     for (const token of Object.keys(COLOR_TOKENS.light)) {
       expect(colors[token]).toBe(`rgb(var(--${token}) / <alpha-value>)`);
     }
-    expect(Object.keys(colors).sort()).toEqual(Object.keys(COLOR_TOKENS.light).sort());
+    // theme.colors, not theme.extend.colors: Tailwind's default palette (white, red-500…) is gone.
+    expect(Object.keys(colors).sort()).toEqual(
+      [...Object.keys(COLOR_TOKENS.light), "transparent", "current"].sort(),
+    );
+    expect(colors.transparent).toBe("transparent");
+    expect(colors.current).toBe("currentColor");
+  });
+
+  it("paints a bare border with the default border token", () => {
+    expect(config.theme.extend.borderColor.DEFAULT).toBe(
+      "rgb(var(--border-default) / <alpha-value>)",
+    );
   });
 
   it("takes radius and font families from the tokens", () => {

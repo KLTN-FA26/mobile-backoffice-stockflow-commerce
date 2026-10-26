@@ -16,6 +16,8 @@ import { ConfigGate } from "@/components/mobile/ConfigErrorScreen";
 
 import { AppProviders } from "@/providers/app-providers";
 
+export { RootErrorBoundary as ErrorBoundary } from "@/components/mobile/RouteErrorBoundary";
+
 // Before anything renders: Hermes has no Web Crypto, and every request needs a correlation id.
 installCryptoPolyfill();
 void SplashScreen.preventAutoHideAsync();

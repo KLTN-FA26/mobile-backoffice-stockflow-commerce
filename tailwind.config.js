@@ -8,14 +8,23 @@ module.exports = {
   presets: [require("nativewind/preset")],
   content: ["./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
   theme: {
-    extend: {
-      // The variables are set by ThemeProvider, so the same class is right in light and dark.
-      colors: Object.fromEntries(
+    // `colors` (not `extend.colors`) on purpose: the design tokens are the whole palette. A default-palette class
+    // (bg-white, text-red-500, border-gray-200…) generates nothing here instead of a colour outside the tokens.
+    // transparent and current are the two keywords the tokens do not cover.
+    // The variables are set by ThemeProvider, so the same class is right in light and dark.
+    colors: {
+      transparent: "transparent",
+      current: "currentColor",
+      ...Object.fromEntries(
         Object.keys(COLOR_TOKENS.light).map((token) => [
           token,
           `rgb(var(--${token}) / <alpha-value>)`,
         ]),
       ),
+    },
+    extend: {
+      // A bare `border` (or `divide-*`) would otherwise fall back to gray-200 / currentColor, which no longer exist.
+      borderColor: { DEFAULT: "rgb(var(--border-default) / <alpha-value>)" },
       borderRadius: Object.fromEntries(
         Object.entries(RADIUS).map(([name, value]) => [name, `${value}px`]),
       ),

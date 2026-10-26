@@ -1,5 +1,6 @@
 import { View } from "react-native";
 
+import { useAnnounce } from "@/hooks/use-announce";
 import { cn } from "@/lib/utils";
 
 import { Text } from "./Text";
@@ -16,8 +17,13 @@ export type FieldFrameProps = {
   children: ReactNode;
 };
 
-/** The label above and the message under a form control: `Input` and `DateField` share it. */
+/**
+ * The label above and the message under a form control: `Input`, `DateField`, `SelectField` and
+ * `ScanField` share it. A new error is also spoken on iOS, which has no live regions.
+ */
 export function FieldFrame({ label, error, hint, className, children }: FieldFrameProps) {
+  useAnnounce(error);
+
   return (
     <View className={cn("gap-[4px]", className)}>
       {label ? (

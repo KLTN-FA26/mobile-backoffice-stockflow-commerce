@@ -20,6 +20,8 @@ export type NavVisibility = {
   firstVisibleHref: string;
   /** Loads the permissions again (after an error). */
   retry: () => void;
+  /** The permissions are being loaded again (a retry, or a background refetch). */
+  retrying: boolean;
 };
 
 /**
@@ -52,9 +54,17 @@ export function useNavVisibility(): NavVisibility {
   );
   const query = useMyPermissions();
   // TanStack Query also reports `isError` when a refetch fails with grants cached: only a first
-  // load without any grant is an error here.
-  const status: NavVisibilityStatus =
-    !authenticated || query.isPending ? "pending" : query.data === undefined ? "error" : "ready";
+  // load without any grant is an error here. And it puts a query with no data back to "pending"
+  // while a retry runs: once the first load has failed, the error stays on screen through the
+  // retry (its button spinning) instead of flashing back to the skeleton.
+  const failedBefore = query.errorUpdateCount > 0;
+  const status: NavVisibilityStatus = !authenticated
+    ? "pending"
+    : query.data !== undefined
+      ? "ready"
+      : query.isPending && !failedBefore
+        ? "pending"
+        : "error";
 
   const groups =
     status === "ready"
@@ -73,5 +83,6 @@ export function useNavVisibility(): NavVisibility {
     firstVisibleHref:
       first === undefined ? MOBILE_ROUTES.hubs.account : MOBILE_ROUTES.hubs[first.group.key],
     retry: () => void query.refetch(),
+    retrying: query.isFetching,
   };
 }

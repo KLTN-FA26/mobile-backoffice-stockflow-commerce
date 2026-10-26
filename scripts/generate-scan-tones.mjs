@@ -7,7 +7,9 @@
 import { Buffer } from "node:buffer";
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
+
+import { isMainModule } from "./is-main-module.mjs";
 
 /** `<repo>/assets/sounds`, where the app imports the tones from. */
 export const DEFAULT_OUT_DIR = path.resolve(
@@ -73,7 +75,7 @@ export function writeScanTones(outDir) {
   }
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
+if (isMainModule(import.meta.url)) {
   const outDir = process.argv[2] === undefined ? DEFAULT_OUT_DIR : path.resolve(process.argv[2]);
   writeScanTones(outDir);
   console.log(

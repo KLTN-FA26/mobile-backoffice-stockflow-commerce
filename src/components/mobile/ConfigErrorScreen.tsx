@@ -8,7 +8,11 @@ import { StateLayout } from "@/components/shared/StateLayout";
 import type { AppConfig } from "@/lib/config";
 import type { ReactNode } from "react";
 
-/** What the app shows instead of itself when `EXPO_PUBLIC_API_URL` is missing or not an http(s) URL. */
+/**
+ * What the app shows instead of itself when `EXPO_PUBLIC_API_URL` is unusable (`readAppConfig`):
+ * missing, not an http(s) URL, or not a base whose path ends with `/api/v1` (a query or fragment
+ * included). Its copy asks for a URL that includes `/api/v1`.
+ */
 export function ConfigErrorScreen() {
   return (
     <View className="flex-1 bg-bg-base">

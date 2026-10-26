@@ -17,6 +17,7 @@ import { renderWithProviders } from "@/test/render";
 import { AuthGate } from "../AuthGate";
 import { ConfigGate } from "../ConfigErrorScreen";
 import { LoginForm } from "../LoginForm";
+import { PasswordField } from "../PasswordField";
 import { ReloginSheet } from "../ReloginSheet";
 import { SessionExpiryBanner } from "../SessionExpiryBanner";
 
@@ -194,6 +195,24 @@ describe("LoginForm", () => {
     expect(submitButton()).toBeEnabled();
   });
 
+  it("the login error is spoken when it appears (iOS has no live regions)", async () => {
+    signInMock.mockRejectedValue(new ApiError(401, "UNAUTHORIZED", "Bad credentials"));
+    const announce = jest
+      .spyOn(AccessibilityInfo, "announceForAccessibility")
+      .mockImplementation(() => undefined);
+    announce.mockClear();
+    const user = userEvent.setup();
+    await renderWithProviders(<LoginForm onSignedIn={jest.fn()} />);
+
+    await fillCredentials(user, "alice", "wrong");
+    await user.press(submitButton());
+
+    await waitFor(() =>
+      expect(announce).toHaveBeenCalledWith("Tên đăng nhập hoặc mật khẩu không đúng."),
+    );
+    announce.mockRestore();
+  });
+
   it("a failure after signing in is not shown as a login failure", async () => {
     // R37a: the session is established; a throw in what follows (navigation) is not a wrong
     // password, so it must not come back as login copy.
@@ -241,6 +260,17 @@ describe("LoginForm", () => {
       jest.advanceTimersByTime(29_000);
     });
     expect(submitButton()).toBeEnabled();
+  });
+});
+
+describe("PasswordField", () => {
+  it("keeps the eye button beside the field when an error shows under it", async () => {
+    await render(<PasswordField error="Bắt buộc nhập" />);
+
+    const field = screen.getByLabelText(MOBILE_LABELS.login.password);
+    const eye = screen.getByRole("togglebutton", { name: MOBILE_LABELS.login.showPassword });
+    expect(eye.parent).toBe(field.parent);
+    expect(screen.getByRole("alert")).toHaveTextContent("Bắt buộc nhập");
   });
 });
 
@@ -298,7 +328,12 @@ describe("ReloginSheet", () => {
 
     expect(screen.getByText(MOBILE_LABELS.relogin.title)).toBeOnTheScreen();
     expect(screen.getByText(MOBILE_LABELS.relogin.description)).toBeOnTheScreen();
-    expect(screen.getByLabelText("Ghi chú")).toHaveProp("value", "draft");
+    // Still mounted under the sheet, which keeps screen readers off it while open.
+    expect(screen.queryByLabelText("Ghi chú")).toBeNull();
+    expect(screen.getByLabelText("Ghi chú", { includeHiddenElements: true })).toHaveProp(
+      "value",
+      "draft",
+    );
   });
 
   it("cannot be swiped away while the session is expired", async () => {
@@ -356,7 +391,8 @@ describe("ReloginSheet", () => {
     });
 
     expect(screen.getByText(MOBILE_LABELS.relogin.title)).toBeOnTheScreen();
-    expect(screen.getByText("screen")).toBeOnTheScreen();
+    // Still mounted under the sheet (hidden from screen readers while it is open).
+    expect(screen.getByText("screen", { includeHiddenElements: true })).toBeOnTheScreen();
   });
 
   it("locks submit and sign out while a re-login is pending", async () => {

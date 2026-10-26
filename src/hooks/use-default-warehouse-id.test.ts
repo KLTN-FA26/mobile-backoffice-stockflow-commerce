@@ -1,6 +1,9 @@
 import { act, renderHook } from "@testing-library/react-native";
 
+import { MOBILE_STORAGE_KEYS } from "@/constants/mobile";
+
 import { useAuthStore } from "@/lib/auth/auth-store";
+import { kv } from "@/lib/platform/storage";
 import { useAppStore } from "@/lib/store/use-app-store";
 
 import { useDefaultWarehouseId } from "./use-default-warehouse-id";
@@ -26,6 +29,19 @@ beforeEach(() => {
 });
 
 describe("useDefaultWarehouseId", () => {
+  it("is null for a signed-in user when the stored map was damaged (null)", async () => {
+    kv.set(
+      MOBILE_STORAGE_KEYS.appStore,
+      JSON.stringify({ state: { defaultWarehouseByUser: null }, version: 1 }),
+    );
+    await useAppStore.persist.rehydrate();
+    signIn(ALICE);
+
+    const { result } = await renderHook(() => useDefaultWarehouseId());
+
+    expect(result.current).toBeNull();
+  });
+
   it("is null while signed out, even when somebody saved a default earlier", async () => {
     useAppStore.getState().setDefaultWarehouse(ALICE.userId, "wh-a");
 

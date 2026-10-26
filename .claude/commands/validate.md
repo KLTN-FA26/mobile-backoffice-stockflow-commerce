@@ -10,7 +10,7 @@ Chạy quy trình verify bắt buộc theo CLAUDE.md (spec §8.3). **Không đư
 ```
 pnpm run typecheck
 pnpm run lint
-pnpm run test
+pnpm run test:coverage
 pnpm run test:scripts
 pnpm sync:check
 pnpm run doctor
@@ -19,7 +19,9 @@ pnpm run export:check
 
 Hoặc gộp `pnpm run validate` (= đúng 7 lệnh trên, dừng ở lệnh đầu tiên hỏng). Chạy riêng từng lệnh khi cần thấy rõ lệnh nào hỏng.
 
-- `lint` = ESLint (`--max-warnings 0`) + `scripts/check-style-bans.mjs` (hex trần, gradient, hồng/magenta, import mock-data).
+- `test:coverage` = Jest + coverage; **thiếu ngưỡng là lỗi** (`lib/domain/**` 90/90 từng file, component 70/70 gộp thư mục — `jest.config.js`). Sửa bằng test hành vi cho nhánh chưa phủ, không hạ ngưỡng. `pnpm test` (không coverage) chỉ để chạy nhanh khi đang làm; lần chạy coverage đầu với cache lạnh mất vài phút.
+
+- `lint` = ESLint (`--max-warnings 0`) + `scripts/check-style-bans.mjs` (hex trần, gradient, hồng/magenta, import mock-data); ESLint còn giữ ranh giới import và `max-lines`.
 - `sync:check` đọc repo web ở `STOCKFLOW_WEB_REPO` (mặc định `../stockflow-ui`) tại `origin/develop`, **không fetch**. Báo thiếu repo/ref → nhờ người dùng clone/`git fetch`, đừng tự fetch.
 - `export:check` = `expo export` cho Android + iOS (build JS bundle, bắt lỗi import/Metro). Build native (APK/IPA) qua EAS, không nằm trong validate.
 

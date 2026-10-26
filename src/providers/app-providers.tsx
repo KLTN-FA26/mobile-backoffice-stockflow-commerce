@@ -8,7 +8,7 @@ import { SafeAreaProvider, initialWindowMetrics } from "react-native-safe-area-c
 import { makeQueryClient } from "@/lib/api/query-client";
 import { wireReactQueryToNative } from "@/lib/platform/react-query-native";
 
-import { ToastProvider } from "@/components/shared/Toast";
+import { ToastProvider } from "@/components/shared/ToastProvider";
 
 import { ThemeProvider } from "./theme-provider";
 

@@ -5,6 +5,8 @@ import { classifyLoadError } from "@/lib/api/load-error";
 
 import { LoadErrorState } from "@/components/shared/LoadErrorState";
 
+import { AppProviders } from "@/providers/app-providers";
+
 import type { ErrorBoundaryProps } from "expo-router";
 
 /**
@@ -21,5 +23,18 @@ export function RouteErrorBoundary({ error, retry }: ErrorBoundaryProps) {
         onRetry={() => void retry()}
       />
     </View>
+  );
+}
+
+/**
+ * The root layout's boundary: what no deeper one caught (the login screen, the gates). It replaces
+ * the whole root layout, `AppProviders` included, so it brings them back: the theme's colour
+ * variables, safe area and gesture root the error screen needs.
+ */
+export function RootErrorBoundary(props: ErrorBoundaryProps) {
+  return (
+    <AppProviders>
+      <RouteErrorBoundary {...props} />
+    </AppProviders>
   );
 }

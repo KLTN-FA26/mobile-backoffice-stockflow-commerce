@@ -142,6 +142,17 @@ describe("useScanFeedback", () => {
     expect(notificationAsync).not.toHaveBeenCalled();
   });
 
+  it("show and clear keep their identity across renders, so an effect may depend on them", async () => {
+    const { result } = await renderHook(() => useScanFeedback());
+    const first = result.current;
+
+    await act(async () => result.current.show(WRONG));
+
+    expect(result.current.feedback).toEqual(WRONG);
+    expect(result.current.show).toBe(first.show);
+    expect(result.current.clear).toBe(first.clear);
+  });
+
   it("announces message", async () => {
     const announce = jest.spyOn(AccessibilityInfo, "announceForAccessibility");
     const { result } = await renderHook(() => useScanFeedback());

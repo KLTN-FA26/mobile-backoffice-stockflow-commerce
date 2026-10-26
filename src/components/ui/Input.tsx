@@ -1,6 +1,5 @@
 import { useState } from "react";
-
-import { UI_LIMITS } from "@/constants/mobile";
+import { View } from "react-native";
 
 import { useThemeColors } from "@/hooks/use-theme-colors";
 import { cn } from "@/lib/utils";
@@ -8,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { FieldFrame } from "./FieldFrame";
 import { TextField } from "./SheetTextInput";
 
-import type { Ref } from "react";
+import type { ReactNode, Ref } from "react";
 import type { TextInputInstance, TextInputProps } from "react-native";
 
 export type InputProps = TextInputProps & {
@@ -18,6 +17,8 @@ export type InputProps = TextInputProps & {
   hint?: string;
   /** Applied to the wrapper (label, field and message), so it positions the whole control. */
   className?: string;
+  /** A control beside the field, on its row and above the message (a show-password button). */
+  trailing?: ReactNode;
   ref?: Ref<TextInputInstance>;
 };
 
@@ -34,53 +35,62 @@ export function Input({
   accessibilityHint,
   editable = true,
   multiline = false,
-  maxFontSizeMultiplier = UI_LIMITS.maxFontSizeMultiplier,
   onFocus,
   onBlur,
   style,
   ref,
+  trailing,
   ...rest
 }: InputProps) {
   const colors = useThemeColors();
   const [focused, setFocused] = useState(false);
 
-  // The alert below the field is a separate element: put the error in the field's own hint too, so
-  // a screen reader says it when the field takes focus.
-  const fieldHint = error
-    ? [accessibilityHint, error].filter(Boolean).join(" ")
-    : accessibilityHint;
+  // The message below the field is a separate element: put it (the error, else the hint) in the
+  // field's own hint too, so a screen reader says it when the field takes focus.
+  const fieldHint = [accessibilityHint, error ?? hint].filter(Boolean).join(". ") || undefined;
   const borderClass = error ? "border-danger" : focused ? "border-brand" : "border-border-default";
+
+  const field = (
+    <TextField
+      ref={ref}
+      accessibilityLabel={accessibilityLabel ?? label}
+      accessibilityHint={fieldHint}
+      editable={editable}
+      multiline={multiline}
+      placeholderTextColor={colors["ink-tertiary"]}
+      onFocus={(event) => {
+        setFocused(true);
+        onFocus?.(event);
+      }}
+      onBlur={(event) => {
+        setFocused(false);
+        onBlur?.(event);
+      }}
+      style={[
+        { minHeight: multiline ? TEXTAREA_MIN_HEIGHT : INPUT_HEIGHT },
+        multiline && { paddingVertical: 12, textAlignVertical: "top" },
+        style,
+      ]}
+      className={cn(
+        "rounded-md border bg-bg-surface px-[12px] font-sans text-[15px] text-ink-primary",
+        borderClass,
+        !editable && "opacity-50",
+        trailing !== undefined && "min-w-0 flex-1",
+      )}
+      {...rest}
+    />
+  );
 
   return (
     <FieldFrame label={label} error={error} hint={hint} className={className}>
-      <TextField
-        ref={ref}
-        accessibilityLabel={accessibilityLabel ?? label}
-        accessibilityHint={fieldHint}
-        editable={editable}
-        multiline={multiline}
-        maxFontSizeMultiplier={maxFontSizeMultiplier}
-        placeholderTextColor={colors["ink-tertiary"]}
-        onFocus={(event) => {
-          setFocused(true);
-          onFocus?.(event);
-        }}
-        onBlur={(event) => {
-          setFocused(false);
-          onBlur?.(event);
-        }}
-        style={[
-          { minHeight: multiline ? TEXTAREA_MIN_HEIGHT : INPUT_HEIGHT },
-          multiline && { paddingVertical: 12, textAlignVertical: "top" },
-          style,
-        ]}
-        className={cn(
-          "rounded-md border bg-bg-surface px-[12px] font-sans text-[15px] text-ink-primary",
-          borderClass,
-          !editable && "opacity-50",
-        )}
-        {...rest}
-      />
+      {trailing === undefined ? (
+        field
+      ) : (
+        <View className="flex-row gap-[8px]">
+          {field}
+          {trailing}
+        </View>
+      )}
     </FieldFrame>
   );
 }

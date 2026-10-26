@@ -3,14 +3,17 @@
 // and imports of the mock-data module. Run from the repo root (`pnpm lint` does).
 import fs from "node:fs";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
+
+import { isMainModule } from "./is-main-module.mjs";
 
 const SCAN_DIRS = ["app", "src"];
 const SCAN_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"]);
 
-// Verbatim web data: tokens are declared once here, the rest is copied and must not be edited.
-const EXEMPT_FILES = new Set(["src/lib/tokens.ts"]);
-const EXEMPT_PREFIXES = ["src/constants/"];
+// Tokens are declared once, in this file. The web constants copied verbatim (port-manifest.json) are the other
+// exemption: they cannot be edited here, so a hex in one is the web's to fix. Everything else in src/constants,
+// src/constants/mobile included, is checked like any other file.
+const TOKENS_FILE = "src/lib/tokens.ts";
+const VERBATIM_CONSTANTS_ROOT = "src/constants/";
 
 const HEX_COLOR =
   /(?<![\w&])#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{4}|[0-9a-fA-F]{3})(?!\w)/;
@@ -84,14 +87,23 @@ export function findStyleBans(files) {
   return bans;
 }
 
-function isExempt(relativePath) {
-  return (
-    EXEMPT_FILES.has(relativePath) ||
-    EXEMPT_PREFIXES.some((prefix) => relativePath.startsWith(prefix))
-  );
+/** Manifest targets under src/constants/ with mode "verbatim"; empty when the manifest cannot be read. */
+function readVerbatimConstants(rootDir) {
+  try {
+    const manifest = JSON.parse(fs.readFileSync(path.join(rootDir, "port-manifest.json"), "utf8"));
+    return new Set(
+      manifest.files
+        .filter(
+          (entry) => entry.mode === "verbatim" && entry.target.startsWith(VERBATIM_CONSTANTS_ROOT),
+        )
+        .map((entry) => entry.target),
+    );
+  } catch {
+    return new Set();
+  }
 }
 
-function collectFiles(rootDir, relativeDir) {
+function collectFiles(rootDir, relativeDir, exempt) {
   const absoluteDir = path.join(rootDir, relativeDir);
   if (!fs.existsSync(absoluteDir)) return [];
   const files = [];
@@ -99,8 +111,8 @@ function collectFiles(rootDir, relativeDir) {
     if (entry.name === "node_modules") continue;
     const relativePath = `${relativeDir}/${entry.name}`;
     if (entry.isDirectory()) {
-      files.push(...collectFiles(rootDir, relativePath));
-    } else if (SCAN_EXTENSIONS.has(path.extname(entry.name)) && !isExempt(relativePath)) {
+      files.push(...collectFiles(rootDir, relativePath, exempt));
+    } else if (SCAN_EXTENSIONS.has(path.extname(entry.name)) && !exempt.has(relativePath)) {
       files.push(relativePath);
     }
   }
@@ -109,10 +121,13 @@ function collectFiles(rootDir, relativeDir) {
 
 /** Scans `app/` and `src/` under `rootDir`; folders that do not exist yet are skipped. */
 export function scanProject(rootDir) {
-  const files = SCAN_DIRS.flatMap((dir) => collectFiles(rootDir, dir)).map((relativePath) => ({
-    path: relativePath,
-    content: fs.readFileSync(path.join(rootDir, relativePath), "utf8"),
-  }));
+  const exempt = new Set([TOKENS_FILE, ...readVerbatimConstants(rootDir)]);
+  const files = SCAN_DIRS.flatMap((dir) => collectFiles(rootDir, dir, exempt)).map(
+    (relativePath) => ({
+      path: relativePath,
+      content: fs.readFileSync(path.join(rootDir, relativePath), "utf8"),
+    }),
+  );
   return findStyleBans(files);
 }
 
@@ -130,6 +145,4 @@ function main() {
   process.exitCode = 1;
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
-  main();
-}
+if (isMainModule(import.meta.url)) main();

@@ -1,13 +1,12 @@
 import { useCameraPermissions } from "expo-camera";
 import { X } from "lucide-react-native";
 import { useContext, useEffect } from "react";
-import { AppState, Pressable, View } from "react-native";
+import { AppState, View } from "react-native";
 import { SafeAreaInsetsContext, SafeAreaView } from "react-native-safe-area-context";
 
 import { MOBILE_LABELS } from "@/constants/mobile";
 
-import { useThemeColors } from "@/hooks/use-theme-colors";
-import { CONTROL_HEIGHT } from "@/lib/tokens";
+import { IconButton } from "@/components/ui";
 
 import { ScreenHeader } from "../ScreenHeader";
 
@@ -24,8 +23,6 @@ export type CameraScannerProps = {
   title: string;
   onClose: () => void;
 };
-
-const CLOSE_ICON_SIZE = 20;
 
 /**
  * expo's permission hook reads the permission on mount only. While it is not granted, read it again
@@ -57,7 +54,6 @@ function useCameraPermission() {
  * access it asks for it or points to Settings; the close button is always there.
  */
 export function CameraScanner({ requestId, mode, title, onClose }: CameraScannerProps) {
-  const colors = useThemeColors();
   const insets = useContext(SafeAreaInsetsContext);
   const [permission, requestPermission] = useCameraPermission();
   // However the screen goes (close button, a code in single mode, back gesture), the field that
@@ -65,16 +61,13 @@ export function CameraScanner({ requestId, mode, title, onClose }: CameraScanner
   useEffect(() => () => publishScannerClosed(requestId), [requestId]);
 
   const closeButton = (
-    // 44 × 44 touch target; the negative margin lines the icon up with the screen edge.
-    <Pressable
-      accessibilityRole="button"
+    // The negative margin lines the icon up with the screen edge.
+    <IconButton
+      icon={X}
       accessibilityLabel={MOBILE_LABELS.scan.close}
       onPress={onClose}
-      style={{ width: CONTROL_HEIGHT.md, height: CONTROL_HEIGHT.md }}
-      className="-mr-[12px] items-center justify-center rounded-md active:bg-bg-muted"
-    >
-      <X size={CLOSE_ICON_SIZE} color={colors["ink-primary"]} />
-    </Pressable>
+      className="-mr-[12px]"
+    />
   );
 
   return (

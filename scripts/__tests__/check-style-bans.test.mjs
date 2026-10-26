@@ -110,9 +110,23 @@ describe("scanProject", () => {
     assert.deepEqual(scanProject(root), []);
   });
 
-  it("skips tokens.ts and constants but scans everything else", () => {
+  it("skips tokens.ts and the verbatim web constants but scans everything else", () => {
+    write(
+      "port-manifest.json",
+      JSON.stringify({
+        files: [
+          { target: "src/constants/web.ts", mode: "verbatim" },
+          { target: "src/constants/adapted.ts", mode: "adapted" },
+          { target: "src/lib/api/error.ts", mode: "verbatim" },
+        ],
+      }),
+    );
     write("src/lib/tokens.ts", 'export const brand = "#0A84FF";\n');
+    write("src/constants/web.ts", 'export const c = "#FFFFFF";\n');
     write("src/constants/mobile/colors.ts", 'export const c = "#FFFFFF";\n');
+    write("src/constants/adapted.ts", 'export const c = "#FFFFFF";\n');
+    write("src/constants/unlisted.ts", 'export const c = "#FFFFFF";\n');
+    write("src/lib/api/error.ts", 'export const c = "#FFFFFF";\n');
     write("src/features/receipt/a.tsx", 'export const c = "#FFFFFF";\n');
     write("src/lib/other.ts", 'export const c = "#FFFFFF";\n');
     write("app/(app)/index.tsx", 'export const c = "text-pink-500";\n');
@@ -121,9 +135,20 @@ describe("scanProject", () => {
     const bans = scanProject(root).map((ban) => `${ban.path}:${ban.line}:${ban.rule}`);
     assert.deepEqual(bans.sort(), [
       "app/(app)/index.tsx:1:pink",
+      "src/constants/adapted.ts:1:hex",
+      "src/constants/mobile/colors.ts:1:hex",
+      "src/constants/unlisted.ts:1:hex",
       "src/features/receipt/a.tsx:1:hex",
+      "src/lib/api/error.ts:1:hex",
       "src/lib/other.ts:1:hex",
     ]);
+  });
+
+  it("scans every constants file when the manifest is missing or unreadable", () => {
+    fs.rmSync(path.join(root, "port-manifest.json"));
+    assert.ok(scanProject(root).some((ban) => ban.path === "src/constants/web.ts"));
+    write("port-manifest.json", "{ not json");
+    assert.ok(scanProject(root).some((ban) => ban.path === "src/constants/web.ts"));
   });
 
   it("skips node_modules folders", () => {
@@ -146,6 +171,28 @@ describe("scanProject", () => {
       assert.match(output, /no style violations/i);
     } finally {
       fs.rmSync(clean, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("cli started through a link", () => {
+  it("still runs: a link to the scripts folder must not turn the check into a silent pass", () => {
+    const temp = fs.mkdtempSync(path.join(os.tmpdir(), "stockflow-style-bans-link-"));
+    try {
+      // A junction works without admin rights on Windows; elsewhere the type is ignored.
+      fs.symlinkSync(path.dirname(SCRIPT), path.join(temp, "link"), "junction");
+      fs.mkdirSync(path.join(temp, "project", "src"), { recursive: true });
+      fs.writeFileSync(path.join(temp, "project", "src", "a.ts"), 'export const c = "#FFFFFF";\n');
+
+      const result = spawnSync(
+        process.execPath,
+        [path.join(temp, "link", "check-style-bans.mjs")],
+        { cwd: path.join(temp, "project"), encoding: "utf8" },
+      );
+      assert.equal(result.status, 1, result.stdout + result.stderr);
+      assert.match(result.stderr, /src\/a\.ts:1/);
+    } finally {
+      fs.rmSync(temp, { recursive: true, force: true });
     }
   });
 });

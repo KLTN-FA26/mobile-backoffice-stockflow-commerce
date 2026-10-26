@@ -1,7 +1,7 @@
 import { NetInfoStateType, useNetInfo } from "@react-native-community/netinfo";
 import { act, render, screen, userEvent } from "@testing-library/react-native";
 import { Hammer } from "lucide-react-native";
-import { Text as RNText } from "react-native";
+import { AccessibilityInfo, Text as RNText } from "react-native";
 import { createGestureController } from "react-native-gesture-handler/jest-utils";
 
 import { UI_LABELS } from "@/constants";
@@ -9,8 +9,10 @@ import { MOBILE_LABELS } from "@/constants/mobile";
 
 import { ApiError } from "@/lib/api/error";
 import { classifyLoadError } from "@/lib/api/load-error";
+import { SHADOW_SM } from "@/lib/tokens";
 
 import {
+  Card,
   CenteredSpinner,
   ComingSoon,
   EmptyStateNoData,
@@ -77,7 +79,8 @@ describe("StatusDot", () => {
     await render(<StatusDot domain="receipt" status="In QC" />);
 
     expect(screen.getByText("Đang kiểm QC")).toBeTruthy();
-    expect(screen.getByLabelText("Đang kiểm QC — In QC")).toBeTruthy();
+    // A screen reader hears the Vietnamese label, then the English original as the hint.
+    expect(screen.getByLabelText("Đang kiểm QC")).toHaveProp("accessibilityHint", "In QC");
     expect(screen.queryByText("In QC")).toBeNull();
   });
 
@@ -85,7 +88,7 @@ describe("StatusDot", () => {
     await render(<StatusDot domain="receipt" status="SOMETHING_NEW" />);
 
     expect(screen.getByText("SOMETHING_NEW")).toBeTruthy();
-    expect(screen.getByLabelText("SOMETHING_NEW")).toBeTruthy();
+    expect(screen.getByLabelText("SOMETHING_NEW").props.accessibilityHint).toBeUndefined();
   });
 
   it("status dot long press reveals english original", async () => {
@@ -222,6 +225,18 @@ describe("LoadErrorState", () => {
     expect(onRetry).toHaveBeenCalledTimes(1);
   });
 
+  it("load error shows its retry busy and locked while retrying", async () => {
+    const onRetry = jest.fn();
+    const user = userEvent.setup();
+    await render(<LoadErrorState kind="network" onRetry={onRetry} retrying />);
+
+    const retry = screen.getByRole("button", { name: MOBILE_LABELS.retry });
+    expect(retry).toBeBusy();
+    expect(retry).toBeDisabled();
+    await user.press(retry);
+    expect(onRetry).not.toHaveBeenCalled();
+  });
+
   it("load error forbidden has no retry", async () => {
     await render(<LoadErrorState kind="forbidden" onRetry={jest.fn()} />);
 
@@ -290,6 +305,19 @@ describe("OfflineBanner", () => {
     await render(<OfflineBanner />);
 
     expect(screen.getByRole("alert")).toHaveTextContent(MOBILE_LABELS.offline);
+  });
+
+  it("offline banner is spoken when it appears (iOS has no live regions)", async () => {
+    const announce = jest
+      .spyOn(AccessibilityInfo, "announceForAccessibility")
+      .mockImplementation(() => undefined);
+    announce.mockClear();
+    jest.mocked(useNetInfo).mockReturnValue(OFFLINE);
+    await render(<OfflineBanner />);
+
+    expect(announce).toHaveBeenCalledTimes(1);
+    expect(announce).toHaveBeenCalledWith(MOBILE_LABELS.offline);
+    announce.mockRestore();
   });
 
   it("offline banner stays hidden while connected", async () => {
@@ -364,6 +392,37 @@ describe("RecordCard", () => {
     await render(<RecordCard title="GR-0003" subtitle={<RNText>Dòng tuỳ biến</RNText>} />);
 
     expect(screen.getByText("Dòng tuỳ biến")).toBeTruthy();
+  });
+});
+
+describe("Card", () => {
+  it("card is a token surface with the card shadow", async () => {
+    await render(
+      <Card accessible accessibilityLabel="Thẻ" className="p-4">
+        <RNText>Nội dung</RNText>
+      </Card>,
+    );
+
+    const card = screen.getByLabelText("Thẻ");
+    expect(card.props.className).toContain("rounded-md border border-border-default bg-bg-surface");
+    expect(card.props.className).toContain("p-4");
+    expect(card).toHaveStyle(SHADOW_SM);
+    expect(screen.queryByRole("button")).toBeNull();
+  });
+
+  it("card with onPress is one button, tinted while pressed", async () => {
+    const onPress = jest.fn();
+    const user = userEvent.setup();
+    await render(
+      <Card accessibilityLabel="Phiếu GR-0001" onPress={onPress}>
+        <RNText>GR-0001</RNText>
+      </Card>,
+    );
+
+    const card = screen.getByRole("button", { name: "Phiếu GR-0001" });
+    expect(card.props.className).toContain("active:bg-bg-subtle");
+    await user.press(card);
+    expect(onPress).toHaveBeenCalledTimes(1);
   });
 });
 

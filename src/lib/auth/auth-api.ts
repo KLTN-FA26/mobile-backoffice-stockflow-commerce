@@ -22,8 +22,19 @@ export async function loginRequest(input: LoginRequest): Promise<AuthToken> {
   return authTokenSchema.parse(data);
 }
 
-export async function fetchMe(signal?: AbortSignal): Promise<AuthUser> {
-  const { data } = await api.get<unknown>(AUTH_ENDPOINTS.me, { signal });
+/**
+ * The signed-in user. With `token` it asks about that token instead of the one in memory: a
+ * sign-in or re-login checks its new token before anything else may use it, while the session on
+ * screen keeps its own (the client lets a header the caller set win).
+ */
+export async function fetchMe({
+  token,
+  signal,
+}: { token?: string; signal?: AbortSignal } = {}): Promise<AuthUser> {
+  const { data } = await api.get<unknown>(AUTH_ENDPOINTS.me, {
+    signal,
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
   return authUserSchema.parse(data);
 }
 

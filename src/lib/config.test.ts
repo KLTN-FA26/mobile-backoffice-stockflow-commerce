@@ -49,6 +49,26 @@ describe("readAppConfig", () => {
     expect(readAppConfig({ EXPO_PUBLIC_API_URL: url })).toEqual({ ok: false, reason: "invalid" });
   });
 
+  it.each([
+    ["no path", "https://api.example.com"],
+    ["the server root", "http://10.0.2.2:8080/"],
+    ["only /api", "https://api.example.com/api"],
+    ["another version", "https://api.example.com/api/v2"],
+    ["a path beyond the version", "https://api.example.com/api/v1/identity"],
+    ["a query string", "https://api.example.com/api/v1?tenant=1"],
+    ["a fragment", "https://api.example.com/api/v1#top"],
+  ])("rejects a url with %s instead of the /api/v1 base", (_name, url) => {
+    // Without /api/v1 every request would reach the wrong path: the login would fail as if the
+    // password were wrong, instead of the configuration error screen.
+    expect(readAppConfig({ EXPO_PUBLIC_API_URL: url })).toEqual({ ok: false, reason: "invalid" });
+  });
+
+  it("accepts /api/v1 behind a path prefix", () => {
+    expect(
+      readAppConfig({ EXPO_PUBLIC_API_URL: "https://gateway.example.com/stockflow/api/v1" }),
+    ).toEqual({ ok: true, apiUrl: "https://gateway.example.com/stockflow/api/v1" });
+  });
+
   it("accepts https", () => {
     expect(readAppConfig({ EXPO_PUBLIC_API_URL: "https://api.example.com/api/v1" })).toEqual({
       ok: true,

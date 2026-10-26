@@ -1,14 +1,27 @@
-import { BottomSheetModal, BottomSheetScrollView, BottomSheetView } from "@gorhom/bottom-sheet";
+import {
+  BottomSheetModal,
+  BottomSheetScrollView,
+  BottomSheetView,
+  useBottomSheetTimingConfigs,
+} from "@gorhom/bottom-sheet";
 import { useContext, useEffect, useRef } from "react";
-import { BackHandler, View, useWindowDimensions } from "react-native";
+import { View, useWindowDimensions } from "react-native";
 import { SafeAreaInsetsContext } from "react-native-safe-area-context";
 
 import { UI_LIMITS } from "@/constants/mobile";
 
+import { useAnnounce } from "@/hooks/use-announce";
 import { useThemeColors } from "@/hooks/use-theme-colors";
-import { RADIUS } from "@/lib/tokens";
+import { MOTION_MS } from "@/lib/tokens";
 
-import { DISMISSIBLE_BACKDROP, LOCKED_BACKDROP, renderHandle } from "./SheetParts";
+import {
+  DISMISSIBLE_BACKDROP,
+  LOCKED_BACKDROP,
+  SheetContainer,
+  renderBackground,
+  renderHandle,
+  useBackButton,
+} from "./SheetParts";
 import { Text } from "./Text";
 import { SheetContextProvider } from "./sheet-context";
 
@@ -38,7 +51,8 @@ export type SheetProps = {
  * sheet driven by `open`. Needs `BottomSheetModalProvider` and `GestureHandlerRootView` above it.
  * A swipe, a tap on the backdrop or the Back button closes it and reports `onOpenChange(false)`,
  * unless it is not `dismissible`. Text fields inside it (`Input`, `SearchField`, `QuantityStepper`)
- * switch to the keyboard-aware input by themselves (R30).
+ * switch to the keyboard-aware input by themselves (R30). For screen readers it says its title when
+ * it opens and keeps VoiceOver off the screen behind; it moves in `MOTION_MS.standard`.
  */
 export function Sheet({
   open,
@@ -55,6 +69,9 @@ export function Sheet({
   const modalRef = useRef<BottomSheetModal>(null);
   // True from present() until the sheet goes away, however that happens.
   const shownRef = useRef(false);
+  const animationConfigs = useBottomSheetTimingConfigs({ duration: MOTION_MS.standard });
+  // Nothing in a sheet is a live region, so Android needs the announcement as well.
+  useAnnounce(open ? title : null, { android: true });
 
   useEffect(() => {
     if (open) {
@@ -67,16 +84,7 @@ export function Sheet({
     }
   }, [open]);
 
-  // The library has no Back button handling: while the sheet is open Back closes it, or does nothing
-  // when it is locked, instead of leaving the screen underneath.
-  useEffect(() => {
-    if (!open) return;
-    const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
-      if (dismissible) modalRef.current?.dismiss();
-      return true;
-    });
-    return () => subscription.remove();
-  }, [open, dismissible]);
+  useBackButton(open, dismissible, () => modalRef.current?.dismiss());
 
   // The library calls this for every way out. Only a user dismissal (swipe, backdrop) finds the
   // sheet still marked as shown; closing through `open` has already cleared the mark.
@@ -105,7 +113,9 @@ export function Sheet({
       enablePanDownToClose={dismissible}
       backdropComponent={dismissible ? DISMISSIBLE_BACKDROP : LOCKED_BACKDROP}
       handleComponent={renderHandle}
-      backgroundStyle={{ backgroundColor: colors["bg-surface"], borderRadius: RADIUS.md }}
+      backgroundComponent={renderBackground}
+      containerComponent={SheetContainer}
+      animationConfigs={animationConfigs}
       handleIndicatorStyle={{ backgroundColor: colors["border-strong"] }}
       keyboardBehavior="interactive"
       keyboardBlurBehavior="restore"

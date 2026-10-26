@@ -1,4 +1,4 @@
-import { QueryClient } from "@tanstack/react-query";
+import { focusManager, QueryClient } from "@tanstack/react-query";
 import { act, screen, userEvent, waitFor } from "@testing-library/react-native";
 import * as SecureStore from "expo-secure-store";
 import { useState } from "react";
@@ -6,6 +6,7 @@ import { Text, TextInput } from "react-native";
 
 import { AUTH_ERROR_CODES, AUTH_UI } from "@/constants/auth";
 import { MOBILE_STORAGE_KEYS } from "@/constants/mobile";
+import { PERMISSION_QUERY } from "@/constants/permissions";
 
 import { api } from "@/lib/api/client";
 import { ApiError } from "@/lib/api/error";
@@ -25,11 +26,14 @@ import {
 } from "./auth-session";
 import { useAuthStore } from "./auth-store";
 import { Can } from "./components/Can";
+import { PermissionBoundary } from "./components/PermissionBoundary";
 import { getAccessToken, loadSession, persistSession, setAccessToken } from "./token-store";
 
 import type { AuthToken } from "./auth-api";
 import type { AuthUser } from "./auth-schemas";
+import type { PermissionCode } from "./me-permissions";
 import type { StoredSession } from "./token-store";
+import type { ReactElement, ReactNode } from "react";
 
 jest.mock("./auth-api", () => ({
   loginRequest: jest.fn(),
@@ -97,6 +101,12 @@ async function signedInAs(
   return stored;
 }
 
+/** What a previous run left on disk: the session in SecureStore and its owner in the kv-store. */
+async function storeSession(session: StoredSession, owner = ALICE.userId): Promise<void> {
+  await persistSession(session);
+  kv.set(OWNER_KEY, owner);
+}
+
 function seededQueryClient(): QueryClient {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   queryClient.setQueryData(ORDERS_KEY, { items: ["SO-1"] });
@@ -122,6 +132,37 @@ function DraftNote() {
   return <TextInput accessibilityLabel="Ghi chú" value={note} onChangeText={setNote} />;
 }
 
+const SUPPLIERS_READ: PermissionCode = "procurement-suppliers:READ";
+
+const grants = (permissions: PermissionCode[]) => ({
+  roles: [],
+  permissions,
+  dataScope: "WAREHOUSE",
+});
+
+/** The two ways a screen is gated by permission, around the same content. */
+const PERMISSION_GATES: [string, (children: ReactNode) => ReactElement][] = [
+  ["Can", (children) => <Can permission={SUPPLIERS_READ}>{children}</Can>],
+  [
+    "PermissionBoundary",
+    (children) => (
+      <PermissionBoundary permissions={[SUPPLIERS_READ]}>{children}</PermissionBoundary>
+    ),
+  ],
+];
+
+/**
+ * The worker pockets the phone and takes it out again: React Query refetches the permissions
+ * (`refetchOnWindowFocus: "always"`).
+ */
+async function returnToForeground() {
+  await act(async () => {
+    focusManager.setFocused(false);
+    focusManager.setFocused(true);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+}
+
 beforeEach(() => {
   login.mockReset().mockResolvedValue(NEW_TOKEN);
   me.mockReset().mockResolvedValue(ALICE);
@@ -132,16 +173,20 @@ afterEach(() => jest.restoreAllMocks());
 
 describe("signIn", () => {
   it("signIn success persists session and authenticates", async () => {
-    let tokenDuringMe: string | null = null;
-    me.mockImplementation(async () => {
-      tokenDuringMe = getAccessToken();
+    let tokenDuringMe: string | undefined;
+    let memoryDuringMe: string | null = "unset";
+    me.mockImplementation(async (options) => {
+      tokenDuringMe = options?.token;
+      memoryDuringMe = getAccessToken();
       return ALICE;
     });
 
     await signIn(CREDENTIALS, NOW);
 
     expect(login).toHaveBeenCalledWith(CREDENTIALS);
+    // /me is asked with the new token itself; the one in memory changes only with the commit.
     expect(tokenDuringMe).toBe("tok-new");
+    expect(memoryDuringMe).toBeNull();
     expect(await loadSession(NOW)).toEqual({
       accessToken: "tok-new",
       expiresAt: NOW + EIGHT_HOURS_S * 1000,
@@ -242,6 +287,16 @@ describe("signIn", () => {
     expect(sessionGet("x")).toBe(1);
     expect(kv.get(OWNER_KEY)).toBe(ALICE.userId);
   });
+
+  it("owner-less session data is wiped on claim", async () => {
+    // Data whose owner was never recorded (or got lost) could be anybody's.
+    sessionSet("x", 1);
+
+    await signIn(CREDENTIALS, NOW);
+
+    expect(sessionGet("x")).toBeNull();
+    expect(kv.get(OWNER_KEY)).toBe(ALICE.userId);
+  });
 });
 
 describe("bootstrapSession", () => {
@@ -262,9 +317,23 @@ describe("bootstrapSession", () => {
     expect(me).not.toHaveBeenCalled();
   });
 
+  it("stored token without session owner is signed out at bootstrap", async () => {
+    // A reinstall wipes the kv-store, but the iOS Keychain keeps the token: nothing on this device
+    // says whose it is any more.
+    await persistSession({ accessToken: "tok-stored", expiresAt: Date.now() + HOUR_MS });
+
+    await bootstrapSession();
+
+    expect(auth()).toMatchObject({ status: "unauthenticated", user: null });
+    expect(me).not.toHaveBeenCalled();
+    expect(getAccessToken()).toBeNull();
+    expect(await SecureStore.getItemAsync(SECURE_KEY)).toBeNull();
+    expect(logout).toHaveBeenCalledWith("tok-stored");
+  });
+
   it("a stored session is verified with /me, then restored with its expiry", async () => {
     const expiresAt = Date.now() + HOUR_MS;
-    await persistSession({ accessToken: "tok-stored", expiresAt });
+    await storeSession({ accessToken: "tok-stored", expiresAt });
     auth().failBootstrap(AUTH_UI.bootstrapError);
     let tokenDuringMe: string | null = null;
     let stateDuringMe: ReturnType<typeof auth> | null = null;
@@ -288,7 +357,7 @@ describe("bootstrapSession", () => {
   });
 
   it("a restored session claims session data, wiping another user's", async () => {
-    await persistSession({ accessToken: "tok-stored", expiresAt: Date.now() + HOUR_MS });
+    await storeSession({ accessToken: "tok-stored", expiresAt: Date.now() + HOUR_MS });
     kv.set(OWNER_KEY, BOB.userId);
     sessionSet("x", 1);
 
@@ -299,7 +368,7 @@ describe("bootstrapSession", () => {
   });
 
   it("bootstrap 401 clears session", async () => {
-    await persistSession({ accessToken: "tok-stored", expiresAt: Date.now() + HOUR_MS });
+    await storeSession({ accessToken: "tok-stored", expiresAt: Date.now() + HOUR_MS });
     me.mockRejectedValue(unauthorized());
 
     await bootstrapSession();
@@ -314,7 +383,7 @@ describe("bootstrapSession", () => {
     ["503 AUTHORIZATION_UNAVAILABLE", authorizationUnavailable()],
   ])("bootstrap %s keeps unknown with bootstrapError", async (_name, failure) => {
     const stored = { accessToken: "tok-stored", expiresAt: Date.now() + HOUR_MS };
-    await persistSession(stored);
+    await storeSession(stored);
     me.mockRejectedValue(failure);
 
     await bootstrapSession();
@@ -328,7 +397,7 @@ describe("bootstrapSession", () => {
   });
 
   it("concurrent bootstraps share one /me request", async () => {
-    await persistSession({ accessToken: "tok-stored", expiresAt: Date.now() + HOUR_MS });
+    await storeSession({ accessToken: "tok-stored", expiresAt: Date.now() + HOUR_MS });
     const pending = deferred<AuthUser>();
     me.mockReturnValueOnce(pending.promise);
 
@@ -343,7 +412,7 @@ describe("bootstrapSession", () => {
   });
 
   it("a bootstrap answer that arrives after sign-out is ignored", async () => {
-    await persistSession({ accessToken: "tok-stored", expiresAt: Date.now() + HOUR_MS });
+    await storeSession({ accessToken: "tok-stored", expiresAt: Date.now() + HOUR_MS });
     const pending = deferred<AuthUser>();
     me.mockReturnValueOnce(pending.promise);
 
@@ -358,7 +427,7 @@ describe("bootstrapSession", () => {
   });
 
   it("a bootstrap 401 that arrives after a new sign-in does not sign it out", async () => {
-    await persistSession({ accessToken: "tok-stored", expiresAt: Date.now() + HOUR_MS });
+    await storeSession({ accessToken: "tok-stored", expiresAt: Date.now() + HOUR_MS });
     const stale = deferred<AuthUser>();
     me.mockReturnValueOnce(stale.promise);
 
@@ -460,6 +529,15 @@ describe("handleUnauthorized", () => {
     auth().logout();
     handleUnauthorized(unauthorized(), null);
     expect(auth()).toMatchObject({ status: "unauthenticated", sessionExpired: false });
+  });
+
+  it("tokenless 401 is ignored", () => {
+    // A request that carried no token says nothing about the session, even when none is in memory.
+    auth().login(ALICE, Date.now() + HOUR_MS);
+
+    handleUnauthorized(unauthorized(), null);
+
+    expect(auth()).toMatchObject({ status: "authenticated", sessionExpired: false });
   });
 
   it("several parallel 401s expire the session once", async () => {
@@ -596,6 +674,50 @@ describe("reauthenticate", () => {
     expect(screen.getByLabelText("Ghi chú")).toHaveDisplayValue("draft");
   });
 
+  describe.each(PERMISSION_GATES)("%s over a failed permission refetch", (_name, gate) => {
+    afterEach(() => focusManager.setFocused(undefined));
+
+    it("keeps the screen and its draft after a 401 from the expired session, through re-login", async () => {
+      const get = jest.spyOn(api, "get").mockRejectedValue(unauthorized());
+      const { queryClient } = await renderWithProviders(gate(<DraftNote />), {
+        user: ALICE,
+        permissions: [SUPPLIERS_READ],
+      });
+      setAccessToken("tok-old");
+      const user = userEvent.setup();
+      await user.type(screen.getByLabelText("Ghi chú"), "draft");
+      await act(async () => handleUnauthorized(unauthorized(), "tok-old"));
+
+      await returnToForeground();
+
+      expect(get).toHaveBeenCalledWith(PERMISSION_QUERY.path, expect.anything());
+      expect(screen.getByLabelText("Ghi chú")).toHaveDisplayValue("draft");
+
+      get.mockResolvedValue({ data: grants([SUPPLIERS_READ]) });
+      await act(async () => {
+        await reauthenticate(CREDENTIALS, queryClient, Date.now());
+      });
+
+      expect(auth().sessionExpired).toBe(false);
+      expect(screen.getByLabelText("Ghi chú")).toHaveDisplayValue("draft");
+    });
+
+    it("keeps the screen and its draft after a network failure", async () => {
+      const get = jest.spyOn(api, "get").mockRejectedValue(networkDown());
+      await renderWithProviders(gate(<DraftNote />), {
+        user: ALICE,
+        permissions: [SUPPLIERS_READ],
+      });
+      const user = userEvent.setup();
+      await user.type(screen.getByLabelText("Ghi chú"), "draft");
+
+      await returnToForeground();
+
+      expect(get).toHaveBeenCalledWith(PERMISSION_QUERY.path, expect.anything());
+      expect(screen.getByLabelText("Ghi chú")).toHaveDisplayValue("draft");
+    });
+  });
+
   it("a 401 from a request sent with the previous token does not expire the renewed session", async () => {
     await signedInAs(ALICE);
     auth().markSessionExpired();
@@ -677,6 +799,85 @@ describe("reauthenticate", () => {
     await leaving;
     expect(auth()).toMatchObject({ status: "unauthenticated", user: null });
   });
+
+  it("early relogin whose /me fails keeps the still-valid session", async () => {
+    // Ten minutes left: the expiry banner offers a re-login while the session still works.
+    const stored = await signedInAs(ALICE, Date.now() + 10 * 60_000);
+    me.mockRejectedValue(networkDown());
+
+    await expect(reauthenticate(CREDENTIALS, seededQueryClient(), NOW)).rejects.toMatchObject({
+      code: AUTH_ERROR_CODES.sessionBootstrapFailed,
+    });
+
+    // The next request still goes out with the old token, and the session is not marked expired.
+    expect(getAccessToken()).toBe("tok-old");
+    expect(await loadSession()).toEqual(stored);
+    expect(auth()).toMatchObject({ status: "authenticated", user: ALICE, sessionExpired: false });
+    expect(logout).toHaveBeenCalledWith("tok-new");
+    expect(logout).not.toHaveBeenCalledWith("tok-old");
+  });
+
+  it("abandoned relogin does not clear the current session", async () => {
+    await signedInAs(ALICE);
+    auth().markSessionExpired();
+    const pending = deferred<AuthUser>();
+    me.mockReturnValueOnce(pending.promise);
+    login
+      .mockResolvedValueOnce(NEW_TOKEN)
+      .mockResolvedValueOnce({ ...NEW_TOKEN, accessToken: "tok-other" });
+
+    const relogin = reauthenticate(CREDENTIALS, seededQueryClient(), NOW);
+    await waitFor(() => expect(me).toHaveBeenCalledTimes(1));
+    // Another session is committed meanwhile: the re-login's answer is stale when it lands.
+    await signIn(CREDENTIALS, NOW);
+    pending.resolve(ALICE);
+
+    await expect(relogin).rejects.toMatchObject({
+      code: AUTH_ERROR_CODES.sessionBootstrapFailed,
+    });
+    expect(getAccessToken()).toBe("tok-other");
+    expect(await loadSession(NOW)).toMatchObject({ accessToken: "tok-other" });
+    expect(auth()).toMatchObject({ status: "authenticated", user: ALICE, sessionExpired: false });
+    expect(logout).toHaveBeenCalledWith("tok-new");
+    expect(logout).not.toHaveBeenCalledWith("tok-other");
+  });
+
+  it("relogin failure is shown without waiting for logout", async () => {
+    await signedInAs(ALICE);
+    auth().markSessionExpired();
+    me.mockRejectedValue(networkDown());
+    const backend = deferred<undefined>();
+    logout.mockReturnValue(backend.promise);
+    let outcome: unknown = "pending";
+
+    void reauthenticate(CREDENTIALS, seededQueryClient(), NOW).catch((error: unknown) => {
+      outcome = error;
+    });
+    // Every local step has settled; only the backend logout is still on its way.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(logout).toHaveBeenCalledWith("tok-new");
+    expect(outcome).toMatchObject({ code: AUTH_ERROR_CODES.sessionBootstrapFailed });
+    backend.resolve(undefined);
+  });
+
+  it.each([
+    ["same user", ALICE, "same-user"],
+    ["another user", BOB, "switched-user"],
+  ] as const)(
+    "successful relogin revokes the previous token (%s)",
+    async (_name, next, outcome) => {
+      await signedInAs(ALICE);
+      auth().markSessionExpired();
+      me.mockResolvedValue(next);
+
+      await expect(reauthenticate(CREDENTIALS, seededQueryClient(), NOW)).resolves.toBe(outcome);
+
+      expect(getAccessToken()).toBe("tok-new");
+      expect(logout).toHaveBeenCalledTimes(1);
+      expect(logout).toHaveBeenCalledWith("tok-old");
+    },
+  );
 });
 
 describe("signOut", () => {

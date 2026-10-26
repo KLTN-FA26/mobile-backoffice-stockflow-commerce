@@ -15,12 +15,12 @@ Thêm trạng thái mới → **không sửa `StatusDot`**, và **không sửa `
 
 ## Các file liên quan — đừng nhầm
 
-| File                             | Mode (trong `port-manifest.json`) | Vai trò                                                                                                                                                                                               |
-| -------------------------------- | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/constants/statuses.ts`      | `verbatim`                        | Union/hằng trạng thái nguyên văn theo docs — nguồn cho zod enum, status-map, lifecycle. **Không sửa tay**                                                                                             |
-| `src/lib/status-map.ts`          | `adapted`                         | **File canonical.** `TONE`, `toneOf()`, `STATUS_LABEL_VI`, `STATUS_LABEL_VI_BY_DOMAIN`, `statusLabelVi()`. Type `SemanticTone`/`StatusDomain` lấy từ `lib/domain/status-types.ts` thay vì `mock-data` |
-| `src/lib/domain/status-map.ts`   | `verbatim`                        | Chỉ re-export. Code mới import từ đây. **Không sửa tay**                                                                                                                                              |
-| `src/lib/domain/status-types.ts` | `adapted`                         | Các type trạng thái / `SemanticTone` / `StatusDomain` mà status-map dùng                                                                                                                              |
+| File                             | Mode (trong `port-manifest.json`) | Vai trò                                                                                                                                                                                                                                                                         |
+| -------------------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/constants/statuses.ts`      | `verbatim`                        | Union/hằng trạng thái nguyên văn theo docs — nguồn cho zod enum, status-map, lifecycle. **Không sửa tay**                                                                                                                                                                       |
+| `src/lib/status-map.ts`          | `adapted`                         | **File canonical.** `TONE`, `toneOf()`, `STATUS_LABEL_VI`, `statusLabelVi()` (export); `STATUS_LABEL_VI_BY_DOMAIN` là const **nội bộ**, không export — chỉ đi qua `statusLabelVi()`. Type `SemanticTone`/`StatusDomain` lấy từ `lib/domain/status-types.ts` thay vì `mock-data` |
+| `src/lib/domain/status-map.ts`   | `verbatim`                        | Chỉ re-export. Code mới import từ đây. **Không sửa tay**                                                                                                                                                                                                                        |
+| `src/lib/domain/status-types.ts` | `adapted`                         | Các type trạng thái / `SemanticTone` / `StatusDomain` mà status-map dùng                                                                                                                                                                                                        |
 
 ## Cách dùng
 
@@ -30,7 +30,7 @@ Thêm trạng thái mới → **không sửa `StatusDot`**, và **không sửa `
 ```
 
 Props: `domain` (`StatusDomain`), `status` (string), `size` `"sm" | "md"`. Hiển thị nhãn Việt; **nhấn giữ** hiện `"Nhãn Việt — English Original"`
-(N7: mobile không có hover) để đối chiếu với docs và BE; `accessibilityLabel` cũng là chuỗi đó.
+(N7: mobile không có hover) để đối chiếu với docs và BE. Screen reader nghe `accessibilityLabel` = nhãn Việt, rồi `accessibilityHint` = chuỗi gốc tiếng Anh.
 
 `domain` không dùng để tra tone (`toneOf` chỉ nhận `status`) nhưng **dùng để tra nhãn**: `statusLabelVi(status, domain)` tra bảng riêng theo domain
 (`STATUS_LABEL_VI_BY_DOMAIN[domain]`) **trước**, rồi mới tới bảng chung `STATUS_LABEL_VI`; không có ở cả hai thì hiện nguyên `status`. Truyền sai `domain` = sai nhãn.

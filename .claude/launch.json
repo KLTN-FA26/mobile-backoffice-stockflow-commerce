@@ -4,7 +4,7 @@
     {
       "name": "expo",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["exec", "expo", "start"],
+      "runtimeArgs": ["exec", "expo", "start", "--go"],
       "port": 8081
     }
   ]

@@ -126,10 +126,20 @@ describe("auth api", () => {
       mock.onGet(AUTH_ENDPOINTS.me).reply(200, { success: true, data: ME });
       const controller = new AbortController();
 
-      await fetchMe(controller.signal);
+      await fetchMe({ signal: controller.signal });
 
       expect(sentHeaders(mock.history.get[0]).Authorization).toBe("Bearer tok-123");
       expect(mock.history.get[0]?.signal).toBe(controller.signal);
+    });
+
+    it("sends a candidate token instead of the one in memory", async () => {
+      // A re-login checks its new token while the session on screen keeps using the old one.
+      setAccessToken("tok-old");
+      mock.onGet(AUTH_ENDPOINTS.me).reply(200, { success: true, data: ME });
+
+      await fetchMe({ token: "tok-new" });
+
+      expect(sentHeaders(mock.history.get[0]).Authorization).toBe("Bearer tok-new");
     });
   });
 

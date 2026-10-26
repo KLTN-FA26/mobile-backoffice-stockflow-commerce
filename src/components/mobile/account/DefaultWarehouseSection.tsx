@@ -1,19 +1,16 @@
-import { ChevronRight } from "lucide-react-native";
 import { useState } from "react";
-import { Pressable } from "react-native";
 
 import { MOBILE_LABELS } from "@/constants/mobile";
 
 import { useDefaultWarehouseId } from "@/hooks/use-default-warehouse-id";
-import { useThemeColors } from "@/hooks/use-theme-colors";
 import { ApiError } from "@/lib/api/error";
 import { classifyLoadError } from "@/lib/api/load-error";
 import { useAuthStore } from "@/lib/auth/auth-store";
 import { useWarehouseOptions } from "@/lib/references/warehouse-options";
 import { useAppStore } from "@/lib/store/use-app-store";
 
-import { LoadErrorState, Section, SelectSheet } from "@/components/shared";
-import { Skeleton, Text } from "@/components/ui";
+import { Card, LoadErrorState, SelectField, SelectSheet } from "@/components/shared";
+import { FieldFrame } from "@/components/ui";
 
 import type { SelectSheetOption } from "@/components/shared";
 import type { WarehouseOption } from "@/lib/references/warehouse-options";
@@ -22,7 +19,7 @@ const { account } = MOBILE_LABELS;
 
 /** The "not set" choice. A real warehouse always has an id, so the empty string is free. */
 const NOT_SET = "";
-const ICON_SIZE = 16;
+const CARD_PADDING = "p-[16px]";
 
 /** "CODE · Name"; the name alone for a warehouse without a code. */
 function warehouseLabel({ code, name }: WarehouseOption): string {
@@ -31,12 +28,12 @@ function warehouseLabel({ code, name }: WarehouseOption): string {
 
 /**
  * The warehouse the other screens pre-fill their warehouse filter with (N9), kept per signed-in user
- * (a shared phone hands the next worker none). It never reaches the API. Rendered only for a user who may read warehouses, so the list is not even requested
- * otherwise. The stored id is shown as "not set" when the active list no longer has it (the
- * warehouse was deactivated); nothing clears it behind the user's back.
+ * (a shared phone hands the next worker none). It never reaches the API. Rendered only for a user
+ * who may read warehouses, so the list is not even requested otherwise. The stored id is shown as
+ * "not set" when the active list no longer has it (the warehouse was deactivated); nothing clears
+ * it behind the user's back.
  */
 export function DefaultWarehouseSection() {
-  const colors = useThemeColors();
   const [open, setOpen] = useState(false);
   const userId = useAuthStore((state) => state.user?.userId ?? null);
   const defaultId = useDefaultWarehouseId();
@@ -47,18 +44,19 @@ export function DefaultWarehouseSection() {
   // background reload changes nothing the user sees.
   if (data === undefined && isError) {
     return (
-      <Section title={account.defaultWarehouse}>
-        <LoadErrorState
-          kind={classifyLoadError(error)}
-          traceId={error instanceof ApiError ? error.traceId : undefined}
-          onRetry={() => void refetch({ cancelRefetch: false })}
-        />
-      </Section>
+      <Card className={CARD_PADDING}>
+        <FieldFrame label={account.defaultWarehouse}>
+          <LoadErrorState
+            kind={classifyLoadError(error)}
+            traceId={error instanceof ApiError ? error.traceId : undefined}
+            onRetry={() => void refetch({ cancelRefetch: false })}
+          />
+        </FieldFrame>
+      </Card>
     );
   }
 
   const chosen = data?.find((warehouse) => warehouse.warehouseId === defaultId);
-  const valueText = chosen === undefined ? account.noWarehouse : warehouseLabel(chosen);
   const options: SelectSheetOption<string>[] = [
     { value: NOT_SET, label: account.noWarehouse },
     ...(data ?? []).map((warehouse) => ({
@@ -66,32 +64,17 @@ export function DefaultWarehouseSection() {
       label: warehouseLabel(warehouse),
     })),
   ];
-  const loading = data === undefined;
 
   return (
-    <Section title={account.defaultWarehouse}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={
-          loading ? account.defaultWarehouse : `${account.defaultWarehouse}: ${valueText}`
-        }
-        accessibilityState={{ disabled: loading, busy: loading }}
-        disabled={loading}
+    <Card className={CARD_PADDING}>
+      <SelectField
+        label={account.defaultWarehouse}
+        valueText={chosen === undefined ? undefined : warehouseLabel(chosen)}
+        placeholder={account.noWarehouse}
+        hint={account.defaultWarehouseHint}
+        loading={data === undefined}
         onPress={() => setOpen(true)}
-        className="min-h-[44px] flex-row items-center justify-between gap-[12px] py-[8px] active:opacity-70"
-      >
-        {loading ? (
-          <Skeleton className="h-[16px] w-1/2" />
-        ) : (
-          <Text weight="medium" numberOfLines={1} className="min-w-0 flex-1">
-            {valueText}
-          </Text>
-        )}
-        <ChevronRight size={ICON_SIZE} color={colors["ink-tertiary"]} />
-      </Pressable>
-      <Text variant="meta" tone="secondary">
-        {account.defaultWarehouseHint}
-      </Text>
+      />
       <SelectSheet
         open={open}
         onOpenChange={setOpen}
@@ -105,6 +88,6 @@ export function DefaultWarehouseSection() {
           }
         }}
       />
-    </Section>
+    </Card>
   );
 }

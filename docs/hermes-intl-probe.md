@@ -16,7 +16,7 @@ Phần thủ công (**chờ chạy** — thuộc nghiệm thu người dùng, Ta
    - iPhone / Android thật (cùng mạng LAN với máy dev): `exp://<LAN-IP>:8081/--/dev-intl-probe`
    - Android emulator: nhấn `a` trong Expo CLI để mở app, rồi mở `exp://10.0.2.2:8081/--/dev-intl-probe`
      (ví dụ `adb shell am start -a android.intent.action.VIEW -d "exp://10.0.2.2:8081/--/dev-intl-probe"`).
-3. Màn **Kiểm tra Intl (Hermes)** liệt kê từng hàm: tên, `Thực tế`, `Kỳ vọng`, và `OK` / `LỆCH`. Dòng đầu cho biết nền tảng + phiên bản (`android 34`, `ios 18.x`).
+3. Màn **Kiểm tra Intl (Hermes)** liệt kê từng hàm: tên, `Thực tế`, `Kỳ vọng`, và `OK` / `LỆCH`. Dòng thứ hai (ngay dưới tiêu đề) cho biết nền tảng + phiên bản (`android 34`, `ios 18.x`); dòng thứ ba là số ca khớp (`n/10 OK`).
    Chữ chọn/sao chép được. Ca ném lỗi hiện `THROW: <message>` và tính là `LỆCH`.
 4. Chụp màn hình, ghi chuỗi **Thực tế** của mỗi hàm vào cột tương ứng trong bảng (ghi `OK` nếu khớp kỳ vọng, hoặc chuỗi thực tế nếu `LỆCH`).
 

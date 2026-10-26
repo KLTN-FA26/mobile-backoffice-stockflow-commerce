@@ -4,6 +4,7 @@ import { MOBILE_STORAGE_KEYS } from "@/constants/mobile";
 
 import {
   clearSession,
+  forgetStoredSession,
   getAccessToken,
   loadSession,
   persistSession,
@@ -127,6 +128,34 @@ describe("token store", () => {
     await expect(clearSession()).resolves.toBeUndefined();
 
     expect(getAccessToken()).toBeNull();
+  });
+
+  it("forgetting a token deletes the stored session holding it, never the memory token", async () => {
+    await persistSession({ accessToken: "tok-new", expiresAt: NOW + 60_000 });
+    setAccessToken("tok-old");
+
+    await forgetStoredSession("tok-new");
+
+    expect(await SecureStore.getItemAsync(KEY)).toBeNull();
+    expect(getAccessToken()).toBe("tok-old");
+  });
+
+  it("forgetting a token leaves another session's stored copy alone", async () => {
+    const session = { accessToken: "tok-old", expiresAt: NOW + 60_000 };
+    await persistSession(session);
+
+    await forgetStoredSession("tok-new");
+
+    expect(await loadSession(NOW)).toEqual(session);
+  });
+
+  it("forgetting a token never rejects, even when the keystore does", async () => {
+    await persistSession({ accessToken: "tok-new", expiresAt: NOW + 60_000 });
+    jest.spyOn(SecureStore, "deleteItemAsync").mockRejectedValueOnce(new Error("keystore down"));
+    await expect(forgetStoredSession("tok-new")).resolves.toBeUndefined();
+
+    jest.spyOn(SecureStore, "getItemAsync").mockRejectedValueOnce(new Error("cannot decrypt"));
+    await expect(forgetStoredSession("tok-new")).resolves.toBeUndefined();
   });
 
   it("clear removes secure item and memory token", async () => {

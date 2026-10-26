@@ -10,9 +10,7 @@
  *   isTerminal(PO_TRANSITIONS, "Closed")                       // true
  */
 
-/* ── Generic helpers ─────────────────────────────────────────────────── */
-
-/* ── Types from mock-data ────────────────────────────────────────────── */
+/* ── Types: constants/statuses + lib/domain/status-types (mobile has no mock-data) ── */
 
 import type {
   LoadStatus,
@@ -36,6 +34,8 @@ import type {
 // (OrderStatus.java), dùng cho zod enum / lifecycle / filter UI.
 // ReceiptStatus cũng vậy — 6 trạng thái docs 03 §5.1 (mock-data chỉ có 5, thiếu "In QC").
 // PickStatus / PackStatus: các trạng thái BE `/fulfillment/tasks` phát ra được (SCRUM-437).
+
+/* ── Generic helpers ─────────────────────────────────────────────────── */
 
 export function canTransition<S extends string>(
   table: Record<S, readonly S[]>,

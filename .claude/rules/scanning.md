@@ -30,6 +30,9 @@ cao 52px. Dùng cho **mọi** chỗ nhập mã: vị trí, SKU/barcode, mã ki�
   (`publishScannerClosed`, lúc unmount — mọi cách đóng: nút, mã đầu tiên, vuốt/back), nên ô không cần biết navigator.
 - `feedback` hiện dưới ô (`ScanFeedbackBanner`) và, khi camera liên tục đang mở, được chuyển sang camera (`publishScanFeedback`) mỗi khi là object mới.
 - Tối đa **một** đăng ký `scan-bus` cho mỗi ô: mở camera lần nữa thay đăng ký cũ; unmount thì huỷ; chế độ một lần huỷ sau mã đầu tiên.
+- **Không đặt `ScanField` trong `Sheet`** (khi `__DEV__`, `useWarnInSheet` ghi `console.warn`): camera mở route toàn màn đè lên sheet, logic bàn phím
+  của sheet xê dịch ô trong lúc máy quét gõ, và trạm giữ ô quét ngay trên màn (thẻ việc đang làm). Cần nhập mã → đặt `ScanField` trên màn, sheet chỉ để
+  chọn / lọc / xác nhận.
 
 ## Màn `scanner` — `app/(app)/scanner.tsx`
 
@@ -54,6 +57,12 @@ Modal toàn màn (`presentation: fullScreenModal`), `expo-camera` `CameraView`; 
 - Nút "Đóng" luôn ở header. Modal phủ cả `SessionExpiryBanner` (banner trao inset trên = 0 cho màn bên dưới) nên `CameraScanner` tự đo mép trên
   bằng `SafeAreaView` native.
 - Plugin `expo-camera` trong `app.config.ts`: chỉ quyền camera (`microphonePermission: false`, `recordAudioAndroid: false`) — app không quay video.
+  **Bản iOS đầu tiên lên App Store phải kiểm ITMS-90683** (thiếu purpose string kiểu `NSMicrophoneUsageDescription` vì `expo-camera`/`expo-audio` vẫn link API micro): xem
+  README, mục "Lần build iOS đầu tiên lên App Store". Đừng đổi cấu hình camera trước khi biết kết quả.
+- **Quyết định còn mở cho trạm quét liên tục (P3/P4).** Trên iOS, `presentation: "fullScreenModal"` phủ cả `SessionExpiryBanner` lẫn `ReloginSheet` (cả hai nằm ở
+  layout `(app)` bên dưới). Trong một ca quét liên tục dài, phiên có thể hết hạn (hoặc 401) mà người dùng không thấy gì cho tới khi đóng camera — mã quét tiếp theo
+  sẽ lỗi 401. Trước khi làm trạm đóng gói / xếp xe chọn một: báo hết phiên **ngay trong `CameraScanner`** (đọc `useSessionExpiry` như `SessionExpiryBanner`), hay đóng camera và trả về
+  trạm khi phiên sắp hết. Mới ghi nhận ở iOS; kiểm cả Android khi có trạm đầu tiên.
 
 ## Phản hồi — `useScanFeedback`
 
@@ -79,4 +88,4 @@ Không "cải tiến" các quy tắc dưới đây — chúng là parity (xem `w
 
 ## Test bắt buộc cho màn Trạm (§8.2)
 
-Hàng đợi quét · gửi lại / bỏ qua · danh sách quét lỗi · chặn bấm 2 lần (ref). Tab Tài khoản có mục **"Kiểm tra quét mã"** để thử camera/âm/rung.
+Hàng đợi quét · gửi lại / bỏ qua · danh sách quét lỗi · chặn bấm 2 lần (`useSubmitLatch`). Tab Tài khoản có mục **"Kiểm tra quét mã"** để thử camera/âm/rung.

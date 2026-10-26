@@ -49,42 +49,26 @@ timeoutManager.setTimeoutProvider({
   clearInterval: (timer) => clearInterval(timer),
 });
 
-// Libraries that later tasks install are registered as virtual mocks, so this file loads (and the
-// mock activates by itself) whether or not the package is in node_modules yet. The factories only
-// run when something imports the library.
-jest.mock("expo-secure-store", () => jest.requireActual("./mocks/secure-store"), { virtual: true });
-jest.mock("expo-camera", () => jest.requireActual("./mocks/expo-camera"), { virtual: true });
-jest.mock("expo-haptics", () => jest.requireActual("./mocks/expo-haptics"), { virtual: true });
-jest.mock("expo-audio", () => jest.requireActual("./mocks/expo-audio"), { virtual: true });
-jest.mock(
-  "@react-native-community/netinfo",
-  () => jest.requireActual("@react-native-community/netinfo/jest/netinfo-mock.js"),
-  { virtual: true },
+// Native libraries the app uses, replaced by stand-ins. Every one is installed: a mock is never
+// `virtual`, so a library that goes missing fails the run instead of hiding behind its mock. The
+// factories only run when something imports the library.
+jest.mock("expo-secure-store", () => jest.requireActual("./mocks/secure-store"));
+jest.mock("expo-camera", () => jest.requireActual("./mocks/expo-camera"));
+jest.mock("expo-haptics", () => jest.requireActual("./mocks/expo-haptics"));
+jest.mock("expo-audio", () => jest.requireActual("./mocks/expo-audio"));
+jest.mock("@react-native-community/netinfo", () =>
+  jest.requireActual("@react-native-community/netinfo/jest/netinfo-mock.js"),
 );
-// The library's own mock with a BottomSheetModal that can be closed (see the file for why).
-jest.mock("@gorhom/bottom-sheet", () => jest.requireActual("./mocks/gorhom-bottom-sheet"), {
-  virtual: true,
-});
-jest.mock("sonner-native", () => jest.requireActual("./mocks/sonner-native"), { virtual: true });
-jest.mock(
-  "@react-native-community/datetimepicker",
-  () => jest.requireActual("./mocks/datetimepicker"),
-  { virtual: true },
+// The library's own mock with a BottomSheetModal that can be closed and renders through the
+// provider's portal (see the file for why).
+jest.mock("@gorhom/bottom-sheet", () => jest.requireActual("./mocks/gorhom-bottom-sheet"));
+jest.mock("sonner-native", () => jest.requireActual("./mocks/sonner-native"));
+jest.mock("@react-native-community/datetimepicker", () =>
+  jest.requireActual("./mocks/datetimepicker"),
 );
 
-// FlashList ships a setup script that registers its own mock; run it once the package exists.
-function isInstalled(moduleName: string): boolean {
-  try {
-    require.resolve(moduleName);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-if (isInstalled("@shopify/flash-list/jestSetup")) {
-  jest.requireActual("@shopify/flash-list/jestSetup");
-}
+// FlashList ships a setup script that registers its own mock.
+jest.requireActual("@shopify/flash-list/jestSetup");
 
 // No session outlives its test: signed-out store, no 401 handler, no token in memory, empty secure
 // store and kv-store. Loaded lazily (never at the top of this file): a module imported here would

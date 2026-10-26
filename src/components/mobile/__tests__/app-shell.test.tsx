@@ -9,13 +9,19 @@ import { getMockContext, renderRouter } from "expo-router/testing-library";
 import { useState } from "react";
 import { TextInput } from "react-native";
 
-import { INTL_PROBE_LABELS, MOBILE_LABELS, MOBILE_ROUTES } from "@/constants/mobile";
+import {
+  INTL_PROBE_LABELS,
+  MOBILE_LABELS,
+  MOBILE_ROUTES,
+  MOBILE_STORAGE_KEYS,
+} from "@/constants/mobile";
 import { PERMISSION_QUERY } from "@/constants/permissions";
 
 import { api } from "@/lib/api/client";
 import { fetchMe, loginRequest, logoutRequest } from "@/lib/auth/auth-api";
 import { useAuthStore } from "@/lib/auth/auth-store";
 import { persistSession } from "@/lib/auth/token-store";
+import { kv } from "@/lib/platform/storage";
 
 import type { AuthUser } from "@/lib/auth/auth-store";
 
@@ -97,8 +103,10 @@ async function reloginAs(user: ReturnType<typeof userEvent.setup>, who: AuthUser
 const firstHubHeader = () => screen.findByRole("header", { name: MOBILE_LABELS.tabs.inbound });
 const accountTab = () => screen.getByRole("button", { name: MOBILE_LABELS.tabs.account });
 
+/** A session a previous run left: the token in SecureStore and its owner in the kv-store. */
 async function storedSession(expiresInMs: number) {
   await persistSession({ accessToken: "tok-stored", expiresAt: Date.now() + expiresInMs });
+  kv.set(MOBILE_STORAGE_KEYS.sessionOwner, ALICE.userId);
 }
 
 // Expo Router requires the route modules lazily, during the first render. Load them up front so
@@ -168,14 +176,13 @@ describe("app shell", () => {
     expect(await screen.findByText("Alice Nguyễn")).toBeOnTheScreen();
     expect(app.getPathname()).toBe(MOBILE_ROUTES.hubs.account);
 
-    // Signing out asks first: the button opens the confirmation, whose own button (the second one
-    // with that name, the sheet comes after the screen's button) does it.
+    // Signing out asks first: the button opens the confirmation, whose own button of the same
+    // name does it (the screen behind the open sheet, its button included, is hidden from screen
+    // readers, so the confirmation's is the one found).
     await user.press(screen.getByRole("button", { name: MOBILE_LABELS.account.signOut }));
     expect(screen.getByText(MOBILE_LABELS.account.signOutConfirm)).toBeOnTheScreen();
     expect(app.getPathname()).toBe(MOBILE_ROUTES.hubs.account);
-    const [, confirm] = screen.getAllByRole("button", { name: MOBILE_LABELS.account.signOut });
-    if (confirm === undefined) throw new Error("The confirmation has no sign-out button");
-    await user.press(confirm);
+    await user.press(screen.getByRole("button", { name: MOBILE_LABELS.account.signOut }));
 
     expect(await screen.findByLabelText(MOBILE_LABELS.login.username)).toBeOnTheScreen();
     expect(app.getPathname()).toBe(MOBILE_ROUTES.login);
@@ -196,7 +203,8 @@ describe("app shell", () => {
     await act(async () => useAuthStore.getState().markSessionExpired());
 
     expect(screen.getByText(MOBILE_LABELS.relogin.title)).toBeOnTheScreen();
-    expect(screen.getByText("Alice Nguyễn")).toBeOnTheScreen();
+    // Still mounted under the sheet (hidden from screen readers while it is open).
+    expect(screen.getByText("Alice Nguyễn", { includeHiddenElements: true })).toBeOnTheScreen();
   });
 
   it("the expiry banner opens the re-login sheet before the session runs out", async () => {
@@ -209,7 +217,8 @@ describe("app shell", () => {
     await user.press(relogin);
 
     expect(screen.getByText(MOBILE_LABELS.relogin.description)).toBeOnTheScreen();
-    expect(screen.getByText("Alice Nguyễn")).toBeOnTheScreen();
+    // Still mounted under the sheet (hidden from screen readers while it is open).
+    expect(screen.getByText("Alice Nguyễn", { includeHiddenElements: true })).toBeOnTheScreen();
   });
 });
 
@@ -257,6 +266,7 @@ describe("re-login over the signed-in screens", () => {
     });
 
     expect(screen.getByText(MOBILE_LABELS.relogin.title)).toBeOnTheScreen();
-    expect(screen.getByText("Alice Nguyễn")).toBeOnTheScreen();
+    // Still mounted under the sheet (hidden from screen readers while it is open).
+    expect(screen.getByText("Alice Nguyễn", { includeHiddenElements: true })).toBeOnTheScreen();
   });
 });

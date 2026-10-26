@@ -1,14 +1,14 @@
 import { Search, X } from "lucide-react-native";
 import { useState } from "react";
-import { Pressable, View } from "react-native";
+import { View } from "react-native";
 
-import { MOBILE_LABELS, UI_LIMITS } from "@/constants/mobile";
+import { MOBILE_LABELS } from "@/constants/mobile";
 
 import { useThemeColors } from "@/hooks/use-theme-colors";
 import { CONTROL_HEIGHT } from "@/lib/tokens";
 import { cn } from "@/lib/utils";
 
-import { TextField } from "@/components/ui";
+import { IconButton, TextField } from "@/components/ui";
 
 import type { ReactNode } from "react";
 
@@ -58,20 +58,18 @@ export function SearchField({
         returnKeyType="search"
         autoCapitalize="none"
         autoCorrect={false}
-        maxFontSizeMultiplier={UI_LIMITS.maxFontSizeMultiplier}
         className="h-full min-w-0 flex-1 px-[8px] font-sans text-[15px] text-ink-primary"
       />
       {value.length > 0 ? (
-        <Pressable
-          accessibilityRole="button"
+        // The box is 44px with a 1px border: the 42px inside, and a pixel of touch on each side.
+        <IconButton
+          icon={X}
           accessibilityLabel={MOBILE_LABELS.clearSearch}
-          // The box is 44px with a 1px border, so the 42px inside gets a pixel back on each side.
-          hitSlop={{ top: 1, bottom: 1 }}
           onPress={() => onChangeText("")}
-          className="h-full w-[44px] items-center justify-center"
-        >
-          <X size={16} color={colors["ink-secondary"]} />
-        </Pressable>
+          size={CONTROL_HEIGHT.md - 2}
+          iconSize={16}
+          iconColor="ink-secondary"
+        />
       ) : null}
       {trailing}
     </View>

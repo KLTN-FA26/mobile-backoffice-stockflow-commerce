@@ -71,33 +71,103 @@ describe("makeToneWav", () => {
   });
 });
 
-describe("DEFAULT_OUT_DIR", () => {
-  const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+const SCRIPTS = path.join(REPO, "scripts");
 
+function tempDir(prefix) {
+  return fs.mkdtempSync(path.join(os.tmpdir(), prefix));
+}
+
+describe("the committed tones", () => {
+  // Read-only: asserts what ships in the app, and never writes into assets/sounds.
+  for (const { file, frequency, durationMs } of SCAN_TONES) {
+    it(`${file} is exactly what makeToneWav renders`, () => {
+      assert.deepEqual(
+        fs.readFileSync(path.join(DEFAULT_OUT_DIR, file)),
+        makeToneWav({ frequency, durationMs }),
+      );
+    });
+  }
+});
+
+describe("DEFAULT_OUT_DIR", () => {
   it("is the app's assets/sounds, found from the script and not from the working directory", () => {
     assert.equal(DEFAULT_OUT_DIR, path.join(REPO, "assets", "sounds"));
   });
+});
 
-  it("the CLI run from another directory writes there, not into that directory", () => {
-    const elsewhere = fs.mkdtempSync(path.join(os.tmpdir(), "scan-tones-cwd-"));
+describe("the CLI", () => {
+  it("writes the tones into the directory it is given, not into the working directory", () => {
+    const cwd = tempDir("scan-tones-cwd-");
+    const outDir = tempDir("scan-tones-out-");
     try {
       const run = spawnSync(
         process.execPath,
-        [path.join(REPO, "scripts", "generate-scan-tones.mjs")],
+        [path.join(SCRIPTS, "generate-scan-tones.mjs"), outDir],
         {
-          cwd: elsewhere,
+          cwd,
           encoding: "utf8",
         },
       );
       assert.equal(run.status, 0, run.stderr);
-      assert.deepEqual(fs.readdirSync(elsewhere), []);
-      assert.ok(run.stdout.includes(DEFAULT_OUT_DIR), run.stdout);
+      assert.deepEqual(fs.readdirSync(cwd), []);
+      assert.deepEqual(fs.readdirSync(outDir).sort(), ["scan-error.wav", "scan-ok.wav"]);
+      assert.ok(run.stdout.includes(outDir), run.stdout);
       assert.deepEqual(
-        fs.readFileSync(path.join(DEFAULT_OUT_DIR, "scan-ok.wav")),
+        fs.readFileSync(path.join(outDir, "scan-ok.wav")),
         makeToneWav({ frequency: 1046, durationMs: 90 }),
       );
     } finally {
-      fs.rmSync(elsewhere, { recursive: true, force: true });
+      fs.rmSync(cwd, { recursive: true, force: true });
+      fs.rmSync(outDir, { recursive: true, force: true });
+    }
+  });
+
+  it("without a directory writes to assets/sounds next to its own folder, wherever it is run from", () => {
+    // A copy of the script in <temp>/scripts, so the default lands in <temp>/assets/sounds and the
+    // committed files are never touched.
+    const temp = tempDir("scan-tones-default-");
+    const cwd = tempDir("scan-tones-elsewhere-");
+    try {
+      fs.mkdirSync(path.join(temp, "scripts"));
+      for (const file of ["generate-scan-tones.mjs", "is-main-module.mjs"]) {
+        fs.copyFileSync(path.join(SCRIPTS, file), path.join(temp, "scripts", file));
+      }
+      const run = spawnSync(
+        process.execPath,
+        [path.join(temp, "scripts", "generate-scan-tones.mjs")],
+        {
+          cwd,
+          encoding: "utf8",
+        },
+      );
+      assert.equal(run.status, 0, run.stderr);
+      assert.deepEqual(fs.readdirSync(cwd), []);
+      assert.deepEqual(fs.readdirSync(path.join(temp, "assets", "sounds")).sort(), [
+        "scan-error.wav",
+        "scan-ok.wav",
+      ]);
+    } finally {
+      fs.rmSync(temp, { recursive: true, force: true });
+      fs.rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it("still runs when node is started through a link to the scripts folder", () => {
+    const temp = tempDir("scan-tones-link-");
+    const outDir = path.join(temp, "out");
+    try {
+      // A junction works without admin rights on Windows; elsewhere the type is ignored.
+      fs.symlinkSync(SCRIPTS, path.join(temp, "link"), "junction");
+      const run = spawnSync(
+        process.execPath,
+        [path.join(temp, "link", "generate-scan-tones.mjs"), outDir],
+        { cwd: temp, encoding: "utf8" },
+      );
+      assert.equal(run.status, 0, run.stderr);
+      assert.deepEqual(fs.readdirSync(outDir).sort(), ["scan-error.wav", "scan-ok.wav"]);
+    } finally {
+      fs.rmSync(temp, { recursive: true, force: true });
     }
   });
 });

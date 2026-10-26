@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, userEvent } from "@testing-library/react-native";
 import { Truck } from "lucide-react-native";
-import { Text as RNText } from "react-native";
+import { AccessibilityInfo, Text as RNText } from "react-native";
 
 import { UI_LABELS } from "@/constants";
 import { MOBILE_LABELS, UI_LIMITS } from "@/constants/mobile";
@@ -327,6 +327,17 @@ describe("ListScreen", () => {
       expect(screen.queryByText(UI_LABELS.loadError.networkTitle)).toBeNull();
       await user.press(screen.getByRole("button", { name: MOBILE_LABELS.retry }));
       expect(props.onRetry).toHaveBeenCalledTimes(1);
+    });
+
+    it("has the notice spoken when it appears (iOS has no live regions)", async () => {
+      const announce = jest
+        .spyOn(AccessibilityInfo, "announceForAccessibility")
+        .mockImplementation(() => undefined);
+      announce.mockClear();
+      await show({ status: "error", error: new Error("boom") });
+
+      expect(announce).toHaveBeenCalledWith(MOBILE_LABELS.refetchFailed);
+      announce.mockRestore();
     });
 
     it("shows the notice without a button when there is nothing to retry with", async () => {

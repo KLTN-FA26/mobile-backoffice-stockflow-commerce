@@ -1,7 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { View } from "react-native";
 
 import { MOBILE_LABELS } from "@/constants/mobile";
+
+import { useAnnounce } from "@/hooks/use-announce";
+import { useSubmitLatch } from "@/hooks/use-submit-latch";
 
 import { Button, Sheet, Text, Textarea } from "@/components/ui";
 
@@ -25,6 +28,12 @@ export type ConfirmSheetProps = {
   onConfirm: (reason?: string) => void;
   /** `"danger"` (the default, as on the web) for destructive actions. */
   variant?: "danger" | "default";
+  /**
+   * The request the confirm started is running (TanStack `isPending`): the sheet locks. A confirm
+   * also latches from the tap itself (`useSubmitLatch`) until `loading` has been true and is false
+   * again, a new `error` shows, or the sheet opens again, so a second tap that lands before
+   * `loading` arrives does not confirm twice.
+   */
   loading?: boolean;
   /**
    * True (the default): confirming closes the sheet and clears the reason. False, for an action that
@@ -32,7 +41,10 @@ export type ConfirmSheetProps = {
    * failure the user fixes it and tries again without typing the reason twice.
    */
   closeOnConfirm?: boolean;
-  /** What went wrong with the last confirm, shown inside the sheet where a screen reader finds it. */
+  /**
+   * What went wrong with the last confirm, shown inside the sheet where a screen reader finds it.
+   * A text is also spoken when it appears (iOS has no live regions); a node is only shown.
+   */
   error?: ReactNode;
   /** Extra content under the description, before the reason field. */
   children?: ReactNode;
@@ -60,18 +72,15 @@ export function ConfirmSheet({
   // The caller may close the sheet through `open` alone: the reason goes with it. Adjusted while
   // rendering, as React advises for state that follows a prop.
   const [wasOpen, setWasOpen] = useState(open);
+  const [openings, setOpenings] = useState(0);
   if (open !== wasOpen) {
     setWasOpen(open);
-    if (!open) setReason("");
+    if (open) setOpenings((count) => count + 1);
+    else setReason("");
   }
+  const latch = useSubmitLatch({ loading, releaseOn: [openings, error] });
 
-  // Set the moment a confirm closes the sheet: a second tap during the closing animation must not
-  // confirm again. Cleared when the sheet opens. Not used with `closeOnConfirm={false}`, where the
-  // sheet stays open and the caller's `loading` guards the request.
-  const confirmed = useRef(false);
-  useEffect(() => {
-    if (open) confirmed.current = false;
-  }, [open]);
+  useAnnounce(typeof error === "string" ? error : null);
 
   const trimmed = reason.trim();
   const canConfirm = (!requireReason || trimmed.length > 0) && !loading;
@@ -81,11 +90,13 @@ export function ConfirmSheet({
     onOpenChange(next);
   };
 
+  // A sheet on its way out (`open` already false, still animating) takes no confirm either.
   const handleConfirm = () => {
-    if (!canConfirm || confirmed.current) return;
-    if (closeOnConfirm) confirmed.current = true;
-    onConfirm(requireReason ? trimmed : undefined);
-    if (closeOnConfirm) handleOpenChange(false);
+    if (!open || !canConfirm) return;
+    latch(() => {
+      onConfirm(requireReason ? trimmed : undefined);
+      if (closeOnConfirm) handleOpenChange(false);
+    });
   };
 
   return (

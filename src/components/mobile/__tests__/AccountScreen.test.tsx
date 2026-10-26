@@ -4,7 +4,7 @@
  * the real query, its zod schema and its error mapping run) and auth-api for the best-effort logout
  * call; the scan check's camera is reached through the router's `push` (no navigator here).
  */
-import { act, screen, userEvent, waitFor } from "@testing-library/react-native";
+import { act, fireEvent, screen, userEvent, waitFor } from "@testing-library/react-native";
 import MockAdapter from "axios-mock-adapter";
 import { router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
@@ -16,6 +16,7 @@ import { WAREHOUSE_PERMISSIONS } from "@/constants/permissions";
 
 import { api } from "@/lib/api/client";
 import { logoutRequest } from "@/lib/auth/auth-api";
+import * as authSession from "@/lib/auth/auth-session";
 import { useAuthStore } from "@/lib/auth/auth-store";
 import { meKeys } from "@/lib/auth/me-permissions";
 import { setAccessToken } from "@/lib/auth/token-store";
@@ -81,8 +82,7 @@ const serveWarehouses = (items: readonly object[] = [HANOI, DANANG]) =>
   http.onGet("/warehouses").reply(200, page(items));
 const warehouseRequests = () => http.history.get.filter(({ url }) => url === "/warehouses");
 
-const warehouseRow = () =>
-  screen.getByRole("button", { name: new RegExp(`^${account.defaultWarehouse}`) });
+const warehouseRow = () => screen.getByRole("button", { name: account.defaultWarehouse });
 const radio = (name: string | RegExp) => screen.getByRole("radio", { name });
 
 /** The row stays disabled while the list loads, so an enabled row means the options are in. */
@@ -134,6 +134,19 @@ describe("identity", () => {
   });
 });
 
+describe("keyboard", () => {
+  it("the account screen scrolls clear of the keyboard and keeps taps while it is up", async () => {
+    await renderWithProviders(<AccountScreen />, { user: ALICE, permissions: [] });
+
+    let node: ReturnType<typeof screen.getByText> | null = screen.getByText("Alice Nguyễn");
+    while (node !== null && node.type !== "RCTScrollView") node = node.parent;
+    if (node === null) throw new Error("the account screen does not scroll");
+    // iOS insets the scroll view by the keyboard; Android resizes the window, as on login.
+    expect(node).toHaveProp("automaticallyAdjustKeyboardInsets", true);
+    expect(node).toHaveProp("keyboardShouldPersistTaps", "handled");
+  });
+});
+
 describe("default warehouse", () => {
   it("hides default warehouse without warehouse read", async () => {
     serveWarehouses();
@@ -170,9 +183,7 @@ describe("default warehouse", () => {
     const user = userEvent.setup();
     serveWarehouses();
     await renderWithProviders(<AccountScreen />, { user: ALICE, permissions: READ_WAREHOUSES });
-    expect(await loadedWarehouseRow()).toHaveAccessibleName(
-      `${account.defaultWarehouse}: ${account.noWarehouse}`,
-    );
+    expect(await loadedWarehouseRow()).toHaveAccessibilityValue({ text: account.noWarehouse });
 
     await user.press(warehouseRow());
     expect(screen.getByRole("search")).toBeOnTheScreen();
@@ -182,7 +193,7 @@ describe("default warehouse", () => {
     // Stored under the signed-in user's id.
     expect(useAppStore.getState().defaultWarehouseByUser).toEqual({ [ALICE.userId]: "wh-dn" });
     expect(screen.queryByRole("radio", { name: "HN · Kho Hà Nội" })).toBeNull();
-    expect(warehouseRow()).toHaveAccessibleName(`${account.defaultWarehouse}: DN · Kho Đà Nẵng`);
+    expect(warehouseRow()).toHaveAccessibilityValue({ text: "DN · Kho Đà Nẵng" });
   });
 
   it("the sheet search finds a warehouse by name without marks", async () => {
@@ -204,9 +215,7 @@ describe("default warehouse", () => {
     useAppStore.getState().setDefaultWarehouse(ALICE.userId, "wh-hn");
     useAppStore.getState().setDefaultWarehouse(BOB.userId, "wh-dn");
     await renderWithProviders(<AccountScreen />, { user: ALICE, permissions: READ_WAREHOUSES });
-    expect(await loadedWarehouseRow()).toHaveAccessibleName(
-      `${account.defaultWarehouse}: HN · Kho Hà Nội`,
-    );
+    expect(await loadedWarehouseRow()).toHaveAccessibilityValue({ text: "HN · Kho Hà Nội" });
 
     await user.press(warehouseRow());
     expect(radio("HN · Kho Hà Nội")).toBeChecked();
@@ -214,9 +223,7 @@ describe("default warehouse", () => {
 
     // Only Alice's entry goes.
     expect(useAppStore.getState().defaultWarehouseByUser).toEqual({ [BOB.userId]: "wh-dn" });
-    expect(warehouseRow()).toHaveAccessibleName(
-      `${account.defaultWarehouse}: ${account.noWarehouse}`,
-    );
+    expect(warehouseRow()).toHaveAccessibilityValue({ text: account.noWarehouse });
   });
 
   it("default warehouse shows not set when stored id is not in the active list", async () => {
@@ -225,9 +232,7 @@ describe("default warehouse", () => {
     useAppStore.getState().setDefaultWarehouse(ALICE.userId, "wh-gone");
     await renderWithProviders(<AccountScreen />, { user: ALICE, permissions: READ_WAREHOUSES });
 
-    expect(await loadedWarehouseRow()).toHaveAccessibleName(
-      `${account.defaultWarehouse}: ${account.noWarehouse}`,
-    );
+    expect(await loadedWarehouseRow()).toHaveAccessibilityValue({ text: account.noWarehouse });
     expect(useAppStore.getState().defaultWarehouseByUser).toEqual({ [ALICE.userId]: "wh-gone" });
   });
 
@@ -238,19 +243,19 @@ describe("default warehouse", () => {
       user: ALICE,
       permissions: READ_WAREHOUSES,
     });
-    const notSet = `${account.defaultWarehouse}: ${account.noWarehouse}`;
-    expect(await loadedWarehouseRow()).toHaveAccessibleName(notSet);
+    const notSet = { text: account.noWarehouse };
+    expect(await loadedWarehouseRow()).toHaveAccessibilityValue(notSet);
     await user.press(warehouseRow());
     await user.press(radio("DN · Kho Đà Nẵng"));
-    expect(warehouseRow()).toHaveAccessibleName(`${account.defaultWarehouse}: DN · Kho Đà Nẵng`);
+    expect(warehouseRow()).toHaveAccessibilityValue({ text: "DN · Kho Đà Nẵng" });
 
     // Bob signs in on the same phone: Alice's warehouse is not his.
     await signInAs(queryClient, BOB);
-    expect(await loadedWarehouseRow()).toHaveAccessibleName(notSet);
+    expect(await loadedWarehouseRow()).toHaveAccessibilityValue(notSet);
     await user.press(warehouseRow());
     expect(radio(account.noWarehouse)).toBeChecked();
     await user.press(radio("HN · Kho Hà Nội"));
-    expect(warehouseRow()).toHaveAccessibleName(`${account.defaultWarehouse}: HN · Kho Hà Nội`);
+    expect(warehouseRow()).toHaveAccessibilityValue({ text: "HN · Kho Hà Nội" });
     expect(useAppStore.getState().defaultWarehouseByUser).toEqual({
       [ALICE.userId]: "wh-dn",
       [BOB.userId]: "wh-hn",
@@ -258,9 +263,7 @@ describe("default warehouse", () => {
 
     // And Alice, back again, still has hers.
     await signInAs(queryClient, ALICE);
-    expect(await loadedWarehouseRow()).toHaveAccessibleName(
-      `${account.defaultWarehouse}: DN · Kho Đà Nẵng`,
-    );
+    expect(await loadedWarehouseRow()).toHaveAccessibilityValue({ text: "DN · Kho Đà Nẵng" });
   });
 
   it("warehouse options error shows a retry", async () => {
@@ -276,9 +279,7 @@ describe("default warehouse", () => {
 
     await user.press(screen.getByRole("button", { name: MOBILE_LABELS.retry }));
 
-    expect(await loadedWarehouseRow()).toHaveAccessibleName(
-      `${account.defaultWarehouse}: ${account.noWarehouse}`,
-    );
+    expect(await loadedWarehouseRow()).toHaveAccessibilityValue({ text: account.noWarehouse });
     expect(screen.queryByText(UI_LABELS.loadError.serverTitle)).toBeNull();
     expect(warehouseRequests()).toHaveLength(2);
   });
@@ -432,9 +433,10 @@ describe("session and version", () => {
 });
 
 describe("sign out", () => {
-  // The screen's own button and the sheet's confirm button carry the same name; the sheet comes
-  // after the button in the tree.
-  const signOutButtons = () => screen.getAllByRole("button", { name: account.signOut });
+  // The screen's own button and the sheet's confirm button carry the same name. While the sheet is
+  // open the screen behind it is hidden from screen readers (and from these queries), so the one
+  // button found is the screen's before, and the confirmation's after, the sheet opens.
+  const signOutButton = () => screen.getByRole("button", { name: account.signOut });
 
   it("sign out asks for confirmation then signs out", async () => {
     const user = userEvent.setup();
@@ -442,14 +444,16 @@ describe("sign out", () => {
     await renderWithProviders(<AccountScreen />, { user: ALICE, permissions: [] });
     expect(screen.queryByText(account.signOutConfirm)).toBeNull();
 
-    await user.press(signOutButtons()[0]);
+    await user.press(signOutButton());
 
     expect(screen.getByText(account.signOutConfirm)).toBeOnTheScreen();
     expect(useAuthStore.getState().status).toBe("authenticated");
     expect(logout).not.toHaveBeenCalled();
 
-    expect(signOutButtons()).toHaveLength(2);
-    await user.press(signOutButtons()[1]);
+    expect(
+      screen.getAllByRole("button", { name: account.signOut, includeHiddenElements: true }),
+    ).toHaveLength(2);
+    await user.press(signOutButton());
 
     await waitFor(() => expect(useAuthStore.getState().status).toBe("unauthenticated"));
     expect(useAuthStore.getState().user).toBeNull();
@@ -467,8 +471,8 @@ describe("sign out", () => {
         }),
     );
     await renderWithProviders(<AccountScreen />, { user: ALICE, permissions: [] });
-    await user.press(signOutButtons()[0]);
-    await user.press(signOutButtons()[1]);
+    await user.press(signOutButton());
+    await user.press(signOutButton());
 
     try {
       // In flight: the confirm spins, nothing can be pressed twice or swiped away, the session is
@@ -491,10 +495,30 @@ describe("sign out", () => {
     }
   });
 
+  it("two taps on the confirm in one frame sign out once", async () => {
+    setAccessToken("tok-alice");
+    const signOut = jest.spyOn(authSession, "signOut");
+    const user = userEvent.setup();
+    await renderWithProviders(<AccountScreen />, { user: ALICE, permissions: [] });
+    await user.press(signOutButton());
+    const confirm = signOutButton();
+
+    // Both taps land before the sign-out has re-rendered the button as busy.
+    await act(async () => {
+      await fireEvent.press(confirm);
+      await fireEvent.press(confirm);
+    });
+
+    await waitFor(() => expect(useAuthStore.getState().status).toBe("unauthenticated"));
+    expect(signOut).toHaveBeenCalledTimes(1);
+    expect(logout).toHaveBeenCalledTimes(1);
+    signOut.mockRestore();
+  });
+
   it("cancelling the confirmation keeps the session", async () => {
     const user = userEvent.setup();
     await renderWithProviders(<AccountScreen />, { user: ALICE, permissions: [] });
-    await user.press(signOutButtons()[0]);
+    await user.press(signOutButton());
 
     await user.press(screen.getByRole("button", { name: MOBILE_LABELS.cancel }));
 

@@ -47,7 +47,9 @@ function isLogin(url: string | undefined): boolean {
 }
 
 // login, me and logout answer a 401 themselves: a wrong password, a dead token at bootstrap or an
-// already revoked session is not "the session expired while I was working".
+// already revoked session is not "the session expired while I was working". Every entry of
+// AUTH_ENDPOINTS is exempt, so an endpoint added there later (change password…) never expires the
+// session on a 401: its caller must handle that 401 itself, or the endpoint belongs elsewhere.
 function isAuthEndpoint(url: string | undefined): boolean {
   const path = pathOf(url);
   return Object.values<string>(AUTH_ENDPOINTS).some((endpoint) => endpoint === path);

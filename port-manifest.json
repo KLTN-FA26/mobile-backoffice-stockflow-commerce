@@ -304,15 +304,16 @@
     {
       "source": "src/lib/auth/components/Can.tsx",
       "target": "src/lib/auth/components/Can.tsx",
-      "mode": "verbatim",
-      "sourceBlob": "21cfc136e573289346a60f1dfac7b40ce5ce5806"
+      "mode": "adapted",
+      "sourceBlob": "21cfc136e573289346a60f1dfac7b40ce5ce5806",
+      "note": "giữ quyền đã biết khi refetch lỗi (N8, như R39): usePermissionChecker quyết định theo data (query.data !== undefined) thay vì isSuccess, nên refetch lỗi (401 phiên hết hạn, mạng, 503) không gỡ màn/bản nháp; web nên sửa theo — trả về verbatim khi web đã sửa"
     },
     {
       "source": "src/lib/auth/components/PermissionBoundary.tsx",
       "target": "src/lib/auth/components/PermissionBoundary.tsx",
       "mode": "adapted",
       "sourceBlob": "a1eccb403ddc872564bf33670e128a3c7f8ee5cf",
-      "note": "Viết lại cho RN, giữ ngữ nghĩa web: chưa đăng nhập/đang tải → skeleton theo variant (ListSkeleton | DetailSkeleton của mobile thay PageSkeleton); lỗi khác 403 → LoadErrorState kind=\"permissions\" (\"Không tải được quyền truy cập\") + Thử lại = query.refetch() thay section PERMISSION_UI.errorTitle; 403 hoặc thiếu mã → LoadErrorState kind=\"forbidden\" với PERMISSION_UI.deniedTitle/deniedDescription; thêm prop mode \"all\" (mặc định = web) | \"any\""
+      "note": "Viết lại cho RN, giữ ngữ nghĩa web: chưa đăng nhập/đang tải → skeleton theo variant (ListSkeleton | DetailSkeleton của mobile thay PageSkeleton); lỗi khác 403 → LoadErrorState kind=\"permissions\" (\"Không tải được quyền truy cập\") + Thử lại = query.refetch() thay section PERMISSION_UI.errorTitle; 403 hoặc thiếu mã → LoadErrorState kind=\"forbidden\" với PERMISSION_UI.deniedTitle/deniedDescription; thêm prop mode \"all\" (mặc định = web) | \"any\"; các trạng thái chờ/lỗi/403 chỉ áp khi chưa có data — đã có quyền thì refetch lỗi (401 phiên hết hạn, mạng, 503) vẫn quyết định theo quyền đã biết (N8, R55, như Can)"
     },
     {
       "source": "src/lib/auth/login-error.ts",
@@ -344,7 +345,7 @@
       "target": "src/lib/domain/lifecycle.ts",
       "mode": "adapted",
       "sourceBlob": "365680025093c4472620340e4baf947e8befa7b3",
-      "note": "types từ lib/domain/status-types; khối import đưa lên đầu file (import/first, eslint --fix)"
+      "note": "types từ lib/domain/status-types; khối import đưa lên đầu file (import/first, eslint --fix); banner \"Types from mock-data\" đổi theo nguồn type thật, banner Generic helpers đặt lại ngay trên các helper"
     },
     {
       "source": "src/lib/domain/receipt-lifecycle.test.ts",

@@ -88,6 +88,73 @@ describe("app store", () => {
     });
   });
 
+  describe("a damaged version 1 record", () => {
+    const coldStartWith = async (stored: unknown) => {
+      kv.set(MOBILE_STORAGE_KEYS.appStore, JSON.stringify({ state: stored, version: 1 }));
+      await useAppStore.persist.rehydrate();
+    };
+
+    it("loads the default warehouse map when the stored one is null", async () => {
+      await coldStartWith({ defaultWarehouseByUser: null, theme: "dark" });
+
+      expect(state().defaultWarehouseByUser).toEqual({});
+      // The fields that are fine stay.
+      expect(state().theme).toBe("dark");
+    });
+
+    it("loads the default theme when the stored one is not a known theme", async () => {
+      await coldStartWith({ theme: "high-contrast", muted: true });
+
+      expect(state().theme).toBe("system");
+      expect(state().muted).toBe(true);
+    });
+
+    it.each([
+      ["a list of warehouses", ["wh-1"]],
+      ["a map with a non-string id", { "u-1": 5 }],
+      ["a string", "wh-1"],
+    ])("drops a warehouse map that is %s", async (_name, defaultWarehouseByUser) => {
+      await coldStartWith({ defaultWarehouseByUser });
+
+      expect(state().defaultWarehouseByUser).toEqual({});
+    });
+
+    it("loads defaults for fields of the wrong type, without throwing", async () => {
+      await coldStartWith({ theme: 1, muted: "yes", hapticsEnabled: null, extra: "kept out" });
+
+      expect(state()).toMatchObject({
+        theme: "system",
+        defaultWarehouseByUser: {},
+        muted: false,
+        hapticsEnabled: true,
+      });
+      expect(state()).not.toHaveProperty("extra");
+    });
+
+    it.each([
+      ["null", null],
+      ["a number", 42],
+      ["a list", ["dark"]],
+    ])("loads defaults when the stored state is %s", async (_name, stored) => {
+      await coldStartWith(stored);
+
+      expect(state()).toMatchObject({
+        theme: "system",
+        defaultWarehouseByUser: {},
+        muted: false,
+        hapticsEnabled: true,
+      });
+    });
+
+    it("loads defaults when the stored JSON is broken", async () => {
+      kv.set(MOBILE_STORAGE_KEYS.appStore, "{not json");
+
+      await useAppStore.persist.rehydrate();
+
+      expect(state().theme).toBe("system");
+    });
+  });
+
   describe("migration from the device-wide default warehouse (version 0)", () => {
     const legacy = {
       state: { theme: "dark", defaultWarehouseId: "wh-9", muted: true, hapticsEnabled: false },

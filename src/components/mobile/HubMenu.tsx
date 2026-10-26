@@ -6,9 +6,9 @@ import { MOBILE_LABELS } from "@/constants/mobile";
 import { PERMISSION_UI } from "@/constants/permissions";
 
 import { useThemeColors } from "@/hooks/use-theme-colors";
-import { SHADOW_SM } from "@/lib/tokens";
 import { cn } from "@/lib/utils";
 
+import { Card } from "@/components/shared/Card";
 import { LoadErrorState } from "@/components/shared/LoadErrorState";
 import { Badge, Skeleton, Text } from "@/components/ui";
 
@@ -21,7 +21,7 @@ export type HubMenuProps = { groupKey: MobileNavGroup["key"] };
 
 const ICON_SIZE = 16;
 const SKELETON_ROWS = 3;
-const CARD_CLASS = "mx-[16px] mt-[16px] rounded-md border border-border-default bg-bg-surface";
+const CARD_MARGIN = "mx-[16px] mt-[16px]";
 
 function HubItem({ item, last }: { item: MobileNavItem; last: boolean }) {
   const colors = useThemeColors();
@@ -30,7 +30,13 @@ function HubItem({ item, last }: { item: MobileNavItem; last: boolean }) {
   return (
     <Pressable
       accessibilityRole="button"
-      onPress={() => router.push(item.href)}
+      // The item alone as the name; the tag and the web tooltip (second line) as the hint.
+      accessibilityLabel={item.label}
+      accessibilityHint={[item.comingSoon ? MOBILE_LABELS.comingSoonTag : null, item.tooltip]
+        .filter(Boolean)
+        .join(". ")}
+      // `navigate`, not `push`: a second tap before the screen is up does not stack it twice.
+      onPress={() => router.navigate(item.href)}
       className={cn(
         "min-h-[56px] flex-row items-center gap-[12px] px-[16px] py-[12px] active:bg-bg-subtle",
         !last && "border-b border-border-default",
@@ -54,12 +60,12 @@ function HubItem({ item, last }: { item: MobileNavItem; last: boolean }) {
 /** Menu-row placeholders; screen readers hear "loading" once, not each row. */
 function HubSkeleton() {
   return (
-    <View
+    <Card
       accessible
       accessibilityRole="progressbar"
       accessibilityLabel={MOBILE_LABELS.loading}
       accessibilityState={{ busy: true }}
-      className={CARD_CLASS}
+      className={CARD_MARGIN}
     >
       {Array.from({ length: SKELETON_ROWS }, (_, index) => (
         <View key={index} className="flex-row items-center gap-[12px] px-[16px] py-[14px]">
@@ -70,16 +76,18 @@ function HubSkeleton() {
           </View>
         </View>
       ))}
-    </View>
+    </Card>
   );
 }
 
 function HubBody({ groupKey }: HubMenuProps) {
-  const { status, groups, retry } = useNavVisibility();
+  const { status, groups, retry, retrying } = useNavVisibility();
 
   if (status === "pending") return <HubSkeleton />;
   // Not knowing the permissions is not "no permission": say so, offer a retry, hide nothing.
-  if (status === "error") return <LoadErrorState kind="permissions" onRetry={retry} />;
+  if (status === "error") {
+    return <LoadErrorState kind="permissions" onRetry={retry} retrying={retrying} />;
+  }
 
   const items = groups.find(({ group }) => group.key === groupKey)?.items ?? [];
   // Only reachable for a moment: a tab left with no item is hidden and its open hub moves away.
@@ -95,11 +103,11 @@ function HubBody({ groupKey }: HubMenuProps) {
 
   return (
     <ScrollView contentContainerClassName="pb-[16px]">
-      <View className={CARD_CLASS} style={SHADOW_SM}>
+      <Card className={CARD_MARGIN}>
         {items.map((item, index) => (
           <HubItem key={item.key} item={item} last={index === items.length - 1} />
         ))}
-      </View>
+      </Card>
     </ScrollView>
   );
 }

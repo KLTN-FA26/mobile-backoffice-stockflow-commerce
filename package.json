@@ -16,6 +16,7 @@
     "lint": "eslint . --max-warnings 0 && node scripts/check-style-bans.mjs",
     "format": "prettier --write \"{app,src,scripts}/**/*.{ts,tsx,mjs,css}\"",
     "test": "jest",
+    "test:coverage": "jest --coverage",
     "test:scripts": "node --test \"scripts/__tests__/*.test.mjs\" \".claude/hooks/__tests__/*.test.mjs\"",
     "sync:check": "node scripts/sync-check.mjs",
     "sync:add": "node scripts/sync-add.mjs",
@@ -23,7 +24,7 @@
     "sync:ack": "node scripts/sync-ack.mjs",
     "doctor": "expo-doctor",
     "export:check": "expo export --platform android --platform ios --output-dir dist",
-    "validate": "pnpm run typecheck && pnpm run lint && pnpm run test && pnpm run test:scripts && pnpm run sync:check && pnpm run doctor && pnpm run export:check",
+    "validate": "pnpm run typecheck && pnpm run lint && pnpm run test:coverage && pnpm run test:scripts && pnpm run sync:check && pnpm run doctor && pnpm run export:check",
     "prepare": "husky"
   },
   "dependencies": {

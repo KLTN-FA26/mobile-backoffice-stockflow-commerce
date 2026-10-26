@@ -8,7 +8,7 @@
 - pnpm 10.9 (khai báo trong `packageManager`; không dùng npm/yarn/bun)
 - Expo Go SDK 58 trên thiết bị hoặc Android emulator
 - BE `be-backoffice-stockflow-commerce` đang chạy với profile `dev`
-- Repo web `stockflow-ui` clone ở `../stockflow-ui` (chỉ để `pnpm sync:check`, xem "Đồng bộ với web")
+- Repo web `stockflow-ui` clone ở `../stockflow-ui` (mọi script `pnpm sync:*` — `check`, `add`, `pull`, `ack` — đọc nó bằng `git`; `validate` và CI chạy `sync:check`, xem "Đồng bộ với web"). Chạy app và Jest thì không cần
 
 ## Chạy thử
 
@@ -30,7 +30,7 @@ Chạy BE bằng profile `dev` (profile `local` tắt security).
 
 ## Chạy trên điện thoại
 
-App luôn gọi BE thật (không có mock mode). Thiếu `EXPO_PUBLIC_API_URL`, hoặc giá trị không phải URL http(s), app hiện
+App luôn gọi BE thật (không có mock mode). Thiếu `EXPO_PUBLIC_API_URL`, hoặc giá trị không phải URL http(s), hoặc đường dẫn không kết thúc bằng `/api/v1` (hay có query/fragment), app hiện
 màn "Thiếu cấu hình máy chủ" thay vì mở màn đăng nhập.
 
 `EXPO_PUBLIC_*` được nhúng vào bundle lúc build JS: sau khi sửa `.env.local`, khởi động lại Metro bằng `pnpm start --clear`.
@@ -86,24 +86,25 @@ vẫn link API micro. Lần tải lên App Store đầu tiên có thể bị bá
 
 ## Lệnh
 
-| Lệnh                | Mô tả                                                              |
-| ------------------- | ------------------------------------------------------------------ |
-| `pnpm start`        | `expo start --go` (Expo Go)                                        |
-| `pnpm start:dev`    | `expo start --dev-client` (dev build)                              |
-| `pnpm android`      | `expo start --android --go`                                        |
-| `pnpm ios`          | `expo start --ios --go`                                            |
-| `pnpm typecheck`    | `tsc --noEmit`                                                     |
-| `pnpm lint`         | ESLint (0 warning) + `scripts/check-style-bans.mjs`                |
-| `pnpm format`       | Prettier ghi đè `app`, `src`, `scripts`                            |
-| `pnpm test`         | Jest (`jest-expo`)                                                 |
-| `pnpm test:scripts` | `node --test` cho `scripts/__tests__` và `.claude/hooks/__tests__` |
-| `pnpm sync:check`   | So file đã port với repo web, đọc-only (xem "Đồng bộ với web")     |
-| `pnpm sync:add`     | Thêm file mới từ web vào `port-manifest.json`                      |
-| `pnpm sync:pull`    | Ghi lại file `verbatim` từ web                                     |
-| `pnpm sync:ack`     | Xác nhận đã rà file `adapted` sau khi web đổi                      |
-| `pnpm run doctor`   | `expo-doctor` (cần mạng)                                           |
-| `pnpm export:check` | `expo export` cho android + ios vào `dist/`                        |
-| `pnpm run validate` | Chạy tất cả kiểm tra ở trên theo thứ tự (xem "Validate")           |
+| Lệnh                 | Mô tả                                                              |
+| -------------------- | ------------------------------------------------------------------ |
+| `pnpm start`         | `expo start --go` (Expo Go)                                        |
+| `pnpm start:dev`     | `expo start --dev-client` (dev build)                              |
+| `pnpm android`       | `expo start --android --go`                                        |
+| `pnpm ios`           | `expo start --ios --go`                                            |
+| `pnpm typecheck`     | `tsc --noEmit`                                                     |
+| `pnpm lint`          | ESLint (0 warning) + `scripts/check-style-bans.mjs`                |
+| `pnpm format`        | Prettier ghi đè `app`, `src`, `scripts`                            |
+| `pnpm test`          | Jest (`jest-expo`), không coverage, chạy nhanh khi đang làm        |
+| `pnpm test:coverage` | Jest + coverage + ngưỡng (cái `validate` và CI chạy)               |
+| `pnpm test:scripts`  | `node --test` cho `scripts/__tests__` và `.claude/hooks/__tests__` |
+| `pnpm sync:check`    | So file đã port với repo web, đọc-only (xem "Đồng bộ với web")     |
+| `pnpm sync:add`      | Thêm file mới từ web vào `port-manifest.json`                      |
+| `pnpm sync:pull`     | Ghi lại file `verbatim` từ web                                     |
+| `pnpm sync:ack`      | Xác nhận đã rà file `adapted` sau khi web đổi                      |
+| `pnpm run doctor`    | `expo-doctor` (cần mạng)                                           |
+| `pnpm export:check`  | `expo export` cho android + ios vào `dist/`                        |
+| `pnpm run validate`  | Chạy tất cả kiểm tra ở trên theo thứ tự (xem "Validate")           |
 
 ## Validate
 
@@ -112,23 +113,22 @@ vẫn link API micro. Lần tải lên App Store đầu tiên có thể bị bá
 1. `typecheck`: `tsc --noEmit`, 0 lỗi.
 2. `lint`: ESLint với `--max-warnings 0`, rồi `scripts/check-style-bans.mjs` (không hex trần ngoài `src/lib/tokens.ts`, không gradient,
    không hồng/magenta/fuchsia, không import `@/lib/mock-data`).
-3. `test`: toàn bộ Jest.
+3. `test:coverage`: toàn bộ Jest kèm coverage; **thiếu ngưỡng là lỗi** (bên dưới).
 4. `test:scripts`: test `node:test` của script đồng bộ, lint-staged và hook `.claude`.
 5. `sync:check`: file đã port khớp repo web; kết thúc bằng "không có lệch".
 6. `doctor`: `expo-doctor`, cần mạng.
 7. `export:check`: `expo export` android + ios ra `dist/` (thư mục này không commit).
 
-Coverage (ngưỡng 90% statements và branches cho `src/lib/domain/**`, đặt trong `jest.config.js`):
+Coverage là một phần của cổng merge. Ngưỡng đặt trong `jest.config.js` và chỉ đo các tập có target: `src/lib/domain/**` ≥ 90% statements và branches **từng file**;
+`src/components/` ≥ 70% statements và branches **gộp cả thư mục**. Khi feature đầu tiên vào, thêm `src/features/*/{schemas,lifecycle,selectors}.ts` ≥ 90% (xem
+`.claude/rules/testing.md`). Bảng theo file in ra khi chạy `pnpm test:coverage`; báo cáo HTML ở `coverage/lcov-report/index.html` (`coverage/` không commit). Lần chạy đầu
+với cache Jest lạnh mất vài phút, các lần sau khoảng 1,5 phút.
 
-```bash
-pnpm test --coverage --collectCoverageFrom='src/lib/domain/**'
-```
-
-Báo cáo ghi vào `coverage/` (không commit).
-
-CI (`.github/workflows/ci.yml`) chạy `pnpm run validate` cho mỗi pull request và mỗi lần push vào `develop` hoặc `main`. Job checkout thêm
+CI (`.github/workflows/ci.yml`) chạy `pnpm run validate` cho mỗi pull request và mỗi lần push vào `develop` hoặc `main`; một push mới vào cùng PR hoặc nhánh huỷ lần chạy
+đang dở (`concurrency`). Job checkout thêm
 repo web `KLTN-FA26/UI` (nhánh `develop`) làm thư mục anh em của repo này (xem "Đồng bộ với web"), nên repo cần secret `WEB_REPO_TOKEN`
-(quyền đọc repo web). Chưa có job EAS; thêm khi có `EXPO_TOKEN`.
+(quyền đọc repo web). **PR từ fork không nhận secret** (GitHub không gửi `WEB_REPO_TOKEN` cho workflow của fork), nên bước checkout repo web sẽ lỗi và CI đỏ ở đó: người
+có quyền ghi đẩy nhánh đó lên repo này (hoặc chạy `pnpm run validate` ở máy dev) để có kết quả CI thật. Chưa có job EAS; thêm khi có `EXPO_TOKEN`.
 
 ## Đồng bộ với web
 

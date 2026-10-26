@@ -1,14 +1,12 @@
 import { ChevronLeft } from "lucide-react-native";
 import { useContext } from "react";
-import { Pressable, View } from "react-native";
+import { View } from "react-native";
 import { SafeAreaInsetsContext } from "react-native-safe-area-context";
 
 import { UI_LABELS } from "@/constants";
 
-import { useThemeColors } from "@/hooks/use-theme-colors";
-import { CONTROL_HEIGHT } from "@/lib/tokens";
-
-import { Text } from "@/components/ui";
+import { OfflineBanner } from "@/components/shared/OfflineBanner";
+import { IconButton, Text } from "@/components/ui";
 
 import type { ReactNode } from "react";
 
@@ -23,15 +21,14 @@ export type ScreenHeaderProps = {
   right?: ReactNode;
 };
 
-const BACK_ICON_SIZE = 20;
 const HEADER_HEIGHT = 52;
 
 /**
  * The top bar of a screen: back, title, an optional action. It takes the status-bar inset itself
- * (the session banner, when shown, has already taken it and passes 0 down).
+ * (the session banner, when shown, has already taken it and passes 0 down). Under the bar it holds
+ * the app's one offline banner, so every screen shows it in the same place and none mounts its own.
  */
 export function ScreenHeader({ title, titleMono = false, onBack, right }: ScreenHeaderProps) {
-  const colors = useThemeColors();
   const insets = useContext(SafeAreaInsetsContext);
 
   return (
@@ -44,16 +41,13 @@ export function ScreenHeader({ title, titleMono = false, onBack, right }: Screen
         className="flex-row items-center gap-[4px] px-[16px]"
       >
         {onBack === undefined ? null : (
-          // 44 × 44 touch target; the negative margin lines the chevron up with the screen edge.
-          <Pressable
-            accessibilityRole="button"
+          // The negative margin lines the chevron up with the screen edge.
+          <IconButton
+            icon={ChevronLeft}
             accessibilityLabel={UI_LABELS.shell.navBack}
             onPress={onBack}
-            style={{ width: CONTROL_HEIGHT.md, height: CONTROL_HEIGHT.md }}
-            className="-ml-[12px] items-center justify-center rounded-md active:bg-bg-muted"
-          >
-            <ChevronLeft size={BACK_ICON_SIZE} color={colors["ink-primary"]} />
-          </Pressable>
+            className="-ml-[12px]"
+          />
         )}
         <Text
           variant="title"
@@ -66,6 +60,7 @@ export function ScreenHeader({ title, titleMono = false, onBack, right }: Screen
         </Text>
         {right}
       </View>
+      <OfflineBanner />
     </View>
   );
 }

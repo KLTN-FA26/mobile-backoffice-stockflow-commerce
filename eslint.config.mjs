@@ -50,9 +50,55 @@ const NO_MOCK_DATA_PATTERN = {
 
 const NO_RN_PRIMITIVES = {
   name: "react-native",
-  importNames: ["Text", "Pressable", "TouchableOpacity", "Button", "TextInput"],
+  importNames: [
+    "Text",
+    "Pressable",
+    "TouchableOpacity",
+    "TouchableHighlight",
+    "TouchableWithoutFeedback",
+    "TouchableNativeFeedback",
+    "Button",
+    "TextInput",
+  ],
   message: "Dùng thành phần tương ứng trong @/components/ui thay vì primitive của react-native.",
 };
+
+// gesture-handler re-exports the same primitives; importing them from there would dodge the rule above.
+const NO_GESTURE_HANDLER_PRIMITIVES = {
+  name: "react-native-gesture-handler",
+  importNames: [
+    "Pressable",
+    "TouchableOpacity",
+    "TouchableHighlight",
+    "TouchableWithoutFeedback",
+    "TextInput",
+  ],
+  message: "Dùng thành phần tương ứng trong @/components/ui thay vì primitive của gesture-handler.",
+};
+
+// Route files only compose screens; fetching, caching and persisted state live in lib/ and features/.
+// A layout that genuinely needs one of these goes in ROUTE_LAYOUTS_WITH_DATA_LIBS below, with the reason.
+const DATA_LIBS = ["@tanstack/react-query", "axios", "expo-secure-store", "zustand"];
+const NO_DATA_LIBS_IN_ROUTES_MESSAGE =
+  "File route không tự lấy dữ liệu hay giữ state; đưa vào @/features, @/components hoặc @/lib.";
+const NO_DATA_LIBS_IN_ROUTES = {
+  paths: DATA_LIBS.map((name) => ({ name, message: NO_DATA_LIBS_IN_ROUTES_MESSAGE })),
+  patterns: [
+    { group: DATA_LIBS.map((name) => `${name}/**`), message: NO_DATA_LIBS_IN_ROUTES_MESSAGE },
+  ],
+};
+
+// Named exemptions. Each entry is a deliberate decision: add one only with a reason on its line.
+// app/_layout.tsx: the root layout wires the config, fonts, crypto polyfill and AppProviders at startup.
+const ROUTE_LAYOUTS_WITH_LIB_IMPORTS = ["app/_layout.tsx"];
+// Layouts that may import a data library. None today.
+const ROUTE_LAYOUTS_WITH_DATA_LIBS = [];
+// src/components/mobile/nav-config.ts: the navigation table, one entry per hub item (same list as the web sidebar).
+const COMPONENT_FILES_OVER_150_LINES = ["src/components/mobile/nav-config.ts"];
+
+// File length (CLAUDE.md): features 200, components 150, route files 60 — counted like `wc -l`.
+const MAX_LINES = { features: 200, components: 150, routes: 60 };
+const TEST_FILES = ["**/*.test.{ts,tsx}", "**/__tests__/**"];
 
 function listFeatureNames(rootDir) {
   const featuresDir = path.join(rootDir, "src", "features");
@@ -129,6 +175,19 @@ export function createConfig(rootDir) {
                 message: "Component dùng chung không được biết về feature hay API client.",
               },
               {
+                // The constants layer is the lowest: it holds data and may only see itself.
+                target: "./src/constants",
+                from: "./src",
+                except: ["./constants"],
+                message:
+                  "src/constants là tầng thấp nhất; không import từ @/lib, @/components, @/features hay @/hooks.",
+              },
+              {
+                target: "./src/components/shared",
+                from: "./src/lib/references",
+                message: "Component dùng chung không được biết về dữ liệu tham chiếu của feature.",
+              },
+              {
                 // The pure error helpers are the one exception (R26): display needs
                 // `classifyLoadError`, `LoadErrorKind` and `ApiError.traceId`. Every other api module stays out.
                 target: "./src/components/shared",
@@ -142,8 +201,28 @@ export function createConfig(rootDir) {
       },
     },
     {
+      // Auth state, session actions and permission hooks belong to screens; a shared component takes what
+      // it needs as props. Types are allowed (they cost nothing at runtime and keep props honest).
+      files: ["src/components/shared/**/*.{ts,tsx}"],
+      rules: {
+        "@typescript-eslint/no-restricted-imports": [
+          "error",
+          {
+            patterns: [
+              {
+                group: ["@/lib/auth", "@/lib/auth/**"],
+                allowTypeImports: true,
+                message:
+                  "Component dùng chung không đọc trạng thái hay hook auth; nhận qua props (import type thì được).",
+              },
+            ],
+          },
+        ],
+      },
+    },
+    {
       files: ["app/**/*.{ts,tsx}"],
-      ignores: ["app/**/_layout.tsx"],
+      ignores: ROUTE_LAYOUTS_WITH_LIB_IMPORTS,
       rules: {
         "import/no-restricted-paths": [
           "error",
@@ -165,10 +244,35 @@ export function createConfig(rootDir) {
       rules: {
         "no-restricted-imports": [
           "error",
-          { paths: [NO_RN_PRIMITIVES], patterns: [NO_MOCK_DATA_PATTERN] },
+          {
+            paths: [NO_RN_PRIMITIVES, NO_GESTURE_HANDLER_PRIMITIVES],
+            patterns: [NO_MOCK_DATA_PATTERN],
+          },
         ],
       },
     },
+    {
+      files: ["app/**/*.{ts,tsx}"],
+      ignores: ROUTE_LAYOUTS_WITH_DATA_LIBS,
+      rules: { "@typescript-eslint/no-restricted-imports": ["error", NO_DATA_LIBS_IN_ROUTES] },
+    },
+    {
+      files: ["src/features/**/*.{ts,tsx}"],
+      ignores: TEST_FILES,
+      rules: { "max-lines": ["error", MAX_LINES.features] },
+    },
+    {
+      // A feature's own components (screen-level pieces) are components: 150, not the feature file limit.
+      files: ["src/features/**/components/**/*.{ts,tsx}"],
+      ignores: TEST_FILES,
+      rules: { "max-lines": ["error", MAX_LINES.components] },
+    },
+    {
+      files: ["src/components/**/*.{ts,tsx}"],
+      ignores: [...TEST_FILES, ...COMPONENT_FILES_OVER_150_LINES],
+      rules: { "max-lines": ["error", MAX_LINES.components] },
+    },
+    { files: ["app/**/*.{ts,tsx}"], rules: { "max-lines": ["error", MAX_LINES.routes] } },
     ...VERBATIM_OVERRIDES,
   ]);
 }

@@ -3,6 +3,7 @@
  * for the session, and `GET /identity/me/permissions` at the HTTP layer for the permission sets, so
  * the permission query, its parsing and its error mapping all run for real.
  */
+import { NetInfoStateType, useNetInfo } from "@react-native-community/netinfo";
 import { focusManager, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, render, renderHook, screen, userEvent, waitFor } from "@testing-library/react-native";
 import MockAdapter from "axios-mock-adapter";
@@ -13,7 +14,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { UI_LABELS } from "@/constants";
 import { INVENTORY_LABELS } from "@/constants/inventory";
-import { MOBILE_LABELS, MOBILE_ROUTES } from "@/constants/mobile";
+import { MOBILE_LABELS, MOBILE_ROUTES, MOBILE_STORAGE_KEYS } from "@/constants/mobile";
 import { PERMISSION_QUERY, PERMISSION_UI } from "@/constants/permissions";
 
 import { api } from "@/lib/api/client";
@@ -21,6 +22,7 @@ import { ApiError } from "@/lib/api/error";
 import { fetchMe } from "@/lib/auth/auth-api";
 import { useAuthStore } from "@/lib/auth/auth-store";
 import { persistSession } from "@/lib/auth/token-store";
+import { kv } from "@/lib/platform/storage";
 
 import { BOTTOM_ACTION_BAR_TEST_ID, BottomActionBar } from "../BottomActionBar";
 import { RouteErrorBoundary } from "../RouteErrorBoundary";
@@ -116,7 +118,9 @@ async function openApp(initialUrl: string = MOBILE_ROUTES.start) {
 }
 
 async function openSignedIn(initialUrl: string = MOBILE_ROUTES.start) {
+  // A session a previous run left: the token in SecureStore and its owner in the kv-store.
   await persistSession({ accessToken: "tok-stored", expiresAt: Date.now() + 8 * HOUR_MS });
+  kv.set(MOBILE_STORAGE_KEYS.sessionOwner, ALICE.userId);
   return openApp(initialUrl);
 }
 
@@ -212,6 +216,21 @@ describe("tabs and hubs by permission", () => {
     expect(screen.getByText(MOBILE_LABELS.nav.warehouseMap)).toBeOnTheScreen();
   });
 
+  it("hub rows are named by the item alone, the tag and English tooltip read as the hint", async () => {
+    grant(WAREHOUSE_STAFF);
+    await openSignedIn(MOBILE_ROUTES.hubs.inbound);
+
+    const putaway = await screen.findByRole("button", { name: MOBILE_LABELS.nav.putaway });
+    expect(putaway).toHaveProp(
+      "accessibilityHint",
+      `${MOBILE_LABELS.comingSoonTag}. ${MOBILE_LABELS.nav.tooltips.putaway}`,
+    );
+    expect(screen.getByRole("button", { name: UI_LABELS.receipt.pageTitle })).toHaveProp(
+      "accessibilityHint",
+      MOBILE_LABELS.nav.tooltips.receipts,
+    );
+  });
+
   it("coming soon items show tag", async () => {
     grant(WAREHOUSE_STAFF);
     await openSignedIn(MOBILE_ROUTES.hubs.inbound);
@@ -242,9 +261,13 @@ describe("tabs and hubs by permission", () => {
     // Not knowing the permissions hides no tab.
     expect(tabButton(MOBILE_LABELS.tabs.fulfillment)).toBeOnTheScreen();
 
-    grant(WAREHOUSE_STAFF);
+    const release = holdPermissions();
     await user.press(screen.getByRole("button", { name: MOBILE_LABELS.retry }));
+    // Asking again: the error stays, its retry spins and cannot be pressed twice.
+    expect(screen.getByRole("button", { name: MOBILE_LABELS.retry })).toBeBusy();
+    expect(screen.getByRole("button", { name: MOBILE_LABELS.retry })).toBeDisabled();
 
+    await act(async () => release(WAREHOUSE_STAFF));
     expect(await screen.findByText(UI_LABELS.receipt.pageTitle)).toBeOnTheScreen();
     expect(screen.queryByText(UI_LABELS.loadError.permissionsTitle)).toBeNull();
   });
@@ -309,6 +332,20 @@ describe("hub items and route stubs", () => {
 
     expect(app.getPathname()).toBe(MOBILE_ROUTES.receipts.list);
     expect(await screen.findByText(MOBILE_LABELS.portPendingDescription)).toBeOnTheScreen();
+  });
+
+  it("a double tap on a hub item opens its screen once", async () => {
+    grant(WAREHOUSE_STAFF);
+    const { app, user } = await openSignedIn(MOBILE_ROUTES.hubs.inbound);
+    const putaway = await screen.findByRole("button", { name: MOBILE_LABELS.nav.putaway });
+
+    await user.press(putaway);
+    await user.press(putaway);
+    expect(app.getPathname()).toBe(MOBILE_ROUTES.putaway);
+
+    // One Back is home: the screen was not stacked twice.
+    await user.press(screen.getByRole("button", { name: UI_LABELS.shell.navBack }));
+    expect(app.getPathname()).toBe(MOBILE_ROUTES.hubs.inbound);
   });
 
   // One navigation per nav item: about 2.5 s on a quiet machine, so Jest's 5 s default runs out
@@ -459,6 +496,36 @@ describe("screen parts", () => {
     expect(screen.getByTestId(BOTTOM_ACTION_BAR_TEST_ID)).toHaveStyle({ paddingBottom: 12 });
   });
 
+  it("bottom action bar latches a primary action that asks to, until its loading clears", async () => {
+    const onPress = jest.fn();
+    const user = userEvent.setup();
+    const bar = (loading: boolean) => (
+      <BottomActionBar primary={{ label: "Xác nhận", onPress, loading, latch: true }} />
+    );
+    const { rerender } = await render(bar(false));
+    const primary = () => screen.getByRole("button", { name: "Xác nhận" });
+
+    await user.press(primary());
+    await user.press(primary());
+    expect(onPress).toHaveBeenCalledTimes(1);
+
+    await rerender(bar(true));
+    await rerender(bar(false));
+    await user.press(primary());
+    expect(onPress).toHaveBeenCalledTimes(2);
+  });
+
+  it("bottom action bar leaves a primary action without latch alone", async () => {
+    const onPress = jest.fn();
+    const user = userEvent.setup();
+    await render(<BottomActionBar primary={{ label: "Tạo phiếu", onPress }} />);
+
+    await user.press(screen.getByRole("button", { name: "Tạo phiếu" }));
+    await user.press(screen.getByRole("button", { name: "Tạo phiếu" }));
+
+    expect(onPress).toHaveBeenCalledTimes(2);
+  });
+
   it("bottom action bar keeps the caller's class on a secondary action", async () => {
     await render(
       <BottomActionBar
@@ -482,6 +549,29 @@ describe("screen parts", () => {
 
     await rerender(<ScreenHeader title={MOBILE_LABELS.tabs.inbound} />);
     expect(screen.queryByRole("button", { name: UI_LABELS.shell.navBack })).toBeNull();
+  });
+
+  it("screen header shows the offline banner under its bar, once, only while offline", async () => {
+    const online = useNetInfo();
+    const netInfo = jest.mocked(useNetInfo);
+    try {
+      netInfo.mockReturnValue({
+        type: NetInfoStateType.none,
+        isConnected: false,
+        isInternetReachable: false,
+        details: null,
+      });
+      const { rerender } = await render(<ScreenHeader title={MOBILE_LABELS.tabs.inbound} />);
+      expect(screen.getAllByRole("alert")).toHaveLength(1);
+      expect(screen.getByRole("alert")).toHaveTextContent(MOBILE_LABELS.offline);
+      expect(screen.getByRole("header", { name: MOBILE_LABELS.tabs.inbound })).toBeOnTheScreen();
+
+      netInfo.mockReturnValue(online);
+      await rerender(<ScreenHeader title={MOBILE_LABELS.tabs.inbound} />);
+      expect(screen.queryByRole("alert")).toBeNull();
+    } finally {
+      netInfo.mockReturnValue(online);
+    }
   });
 
   it("route error boundary renders retry", async () => {

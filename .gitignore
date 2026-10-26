@@ -25,6 +25,12 @@ ios/
 *.orig.*
 coverage/
 
+# Lockfile của package manager khác (chỉ pnpm-lock.yaml được commit)
+package-lock.json
+yarn.lock
+bun.lock
+bun.lockb
+
 # Metro / TS cache
 .metro-health-check*
 *.tsbuildinfo

@@ -1,11 +1,14 @@
 /** Test render helper: the providers a screen needs, plus an optional signed-in session. */
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { render } from "@testing-library/react-native";
 
+import { makeQueryClient } from "@/lib/api/query-client";
 import { useAuthStore } from "@/lib/auth/auth-store";
 import { meKeys } from "@/lib/auth/me-permissions";
 
 import type { AuthUser } from "@/lib/auth/auth-store";
+import type { QueryClient } from "@tanstack/react-query";
 import type { RenderResult } from "@testing-library/react-native";
 import type { ReactElement, ReactNode } from "react";
 
@@ -34,11 +37,19 @@ export interface RenderWithProvidersOptions {
 
 export type RenderWithProvidersResult = RenderResult & { queryClient: QueryClient };
 
+/**
+ * The app's own client (`makeQueryClient`): its defaults, the 403 → reload permissions handler and
+ * the permission query's own options (`gcTime: 0`) behave as in the app. One override only: no
+ * retry, so a failure shows at once instead of after the app's backoff (seconds per retry).
+ */
 function makeTestQueryClient(): QueryClient {
-  return new QueryClient({
-    // gcTime Infinity: seeded data is never evicted in the middle of a test.
-    defaultOptions: { queries: { retry: false, gcTime: Infinity }, mutations: { retry: false } },
+  const client = makeQueryClient();
+  const defaults = client.getDefaultOptions();
+  client.setDefaultOptions({
+    queries: { ...defaults.queries, retry: false },
+    mutations: { ...defaults.mutations, retry: false },
   });
+  return client;
 }
 
 function signIn(
@@ -68,8 +79,11 @@ export async function renderWithProviders(
     signIn(queryClient, user ?? {}, permissions ?? []);
   }
 
+  // As in AppProviders: sheets render through the provider's portal, at the end of the tree.
   const wrapper = ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    <QueryClientProvider client={queryClient}>
+      <BottomSheetModalProvider>{children}</BottomSheetModalProvider>
+    </QueryClientProvider>
   );
   const result = await render(ui, { wrapper });
   return { ...result, queryClient };

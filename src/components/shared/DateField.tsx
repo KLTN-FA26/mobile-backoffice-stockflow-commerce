@@ -10,7 +10,7 @@ import { formatDate } from "@/lib/format";
 import { clampDate, isoToLocalDate, localDateToIso } from "@/lib/iso-date";
 import { cn } from "@/lib/utils";
 
-import { FieldFrame, INPUT_HEIGHT, Text } from "@/components/ui";
+import { FieldFrame, IconButton, INPUT_HEIGHT, Text } from "@/components/ui";
 
 export type DateFieldProps = {
   label: string;
@@ -92,14 +92,13 @@ export function DateField({
           </Text>
         </Pressable>
         {clearable && date !== null ? (
-          <Pressable
-            accessibilityRole="button"
+          <IconButton
+            icon={X}
             accessibilityLabel={MOBILE_LABELS.clearField(label)}
             onPress={() => onChange(null)}
-            className="h-[44px] w-[44px] items-center justify-center"
-          >
-            <X size={16} color={colors["ink-secondary"]} />
-          </Pressable>
+            iconSize={16}
+            iconColor="ink-secondary"
+          />
         ) : null}
       </View>
       {calendarOpen && Platform.OS === "ios" ? (

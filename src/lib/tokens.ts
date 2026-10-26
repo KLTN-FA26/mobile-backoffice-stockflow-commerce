@@ -6,8 +6,9 @@
  * (`themeChannels`), `tailwind.config.js` maps every token to `rgb(var(--token) / <alpha-value>)`,
  * and icons or the status bar get hex through `useThemeColors()`.
  *
- * Tailwind loads this file in plain Node (it is required by `tailwind.config.js`), so it must not
- * import anything that needs React Native at runtime. Types only.
+ * Tailwind loads this file in plain Node (it is required by `tailwind.config.js`), and so does
+ * `app.config.ts` (through jiti, for the splash background), so it must not import
+ * anything that needs React Native at runtime. Types only.
  */
 import type { ViewStyle } from "react-native";
 
@@ -126,6 +127,12 @@ export const themeChannels: Record<Scheme, ThemeVariables> = {
 export const RADIUS = { sm: 4, md: 8, full: 9999 } as const;
 
 export const CONTROL_HEIGHT = { sm: 40, md: 44, lg: 52 } as const;
+
+/**
+ * Motion durations (spec §4.3: 120–180 ms): `standard` for what moves into or out of view (a sheet,
+ * a toast arriving), `fast` for what leaves or answers a touch.
+ */
+export const MOTION_MS = { fast: 120, standard: 180 } as const;
 
 /**
  * Web `--sh-sm` as React Native shadow props (iOS) plus `elevation` (Android), for card-like

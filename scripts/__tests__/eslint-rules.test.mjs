@@ -27,7 +27,13 @@ const FIXTURE_FILES = {
   "src/lib/api/error.ts": "export class ApiError extends Error {}\n",
   "src/lib/api/load-error.ts": "export const classifyLoadError = () => 'server';\n",
   "src/lib/platform/storage.ts": "export const kv = {};\n",
+  "src/lib/references/warehouse-options.ts": "export const warehouseOptions = [];\n",
+  "src/lib/auth/auth-store.ts": "export const useAuthStore = () => null;\n",
+  "src/lib/auth/me-permissions.ts": "export type PermissionCode = string;\n",
+  "src/constants/mobile/index.ts": "export const MOBILE_LABELS = {};\n",
   "src/components/shared/.gitkeep": "",
+  "src/components/mobile/.gitkeep": "",
+  "src/components/ui/.gitkeep": "",
 };
 
 let fixtureRoot;
@@ -50,6 +56,11 @@ before(() => {
 after(() => {
   fs.rmSync(fixtureRoot, { recursive: true, force: true });
 });
+
+/** A module of exactly `count` lines (what `wc -l` says). */
+function linesOf(count) {
+  return `export const a = 1;\n${"// filler\n".repeat(count - 1)}`;
+}
 
 async function ruleIdsFor(code, filePath) {
   const [result] = await eslint.lintText(code, { filePath: path.join(fixtureRoot, filePath) });
@@ -103,13 +114,112 @@ describe("architecture boundaries", () => {
     assert.ok(ids.includes("import/no-restricted-paths"), ids.join(", "));
   });
 
-  it("route file importing lib is an error (except layouts)", async () => {
+  it("route file importing lib is an error (except the root layout)", async () => {
     const code = 'import { kv } from "@/lib/platform/storage";\nexport default kv;\n';
     const inRoute = await ruleIdsFor(code, "app/(app)/(tabs)/inbound/index.tsx");
     assert.ok(inRoute.includes("import/no-restricted-paths"), inRoute.join(", "));
 
-    const inLayout = await ruleIdsFor(code, "app/_layout.tsx");
-    assert.ok(!inLayout.includes("import/no-restricted-paths"), inLayout.join(", "));
+    const inRootLayout = await ruleIdsFor(code, "app/_layout.tsx");
+    assert.ok(!inRootLayout.includes("import/no-restricted-paths"), inRootLayout.join(", "));
+  });
+
+  it("a nested layout importing lib, hooks or providers is an error", async () => {
+    // Only the root layout wires config, fonts and providers; a layout further down is a screen shell.
+    const code = 'import { kv } from "@/lib/platform/storage";\nexport default kv;\n';
+    for (const file of [
+      "app/(app)/_layout.tsx",
+      "app/(app)/(tabs)/_layout.tsx",
+      "app/(app)/(tabs)/inbound/_layout.tsx",
+    ]) {
+      const ids = await ruleIdsFor(code, file);
+      assert.ok(ids.includes("import/no-restricted-paths"), `${file}: ${ids.join(", ")}`);
+    }
+  });
+
+  it("a nested layout importing constants is allowed", async () => {
+    const code =
+      'import { MOBILE_LABELS } from "@/constants/mobile";\nexport default MOBILE_LABELS;\n';
+    const ids = await ruleIdsFor(code, "app/(app)/(tabs)/_layout.tsx");
+    assert.ok(!ids.includes("import/no-restricted-paths"), ids.join(", "));
+  });
+
+  it("shared component importing a feature is an error", async () => {
+    const ids = await ruleIdsFor(
+      'import { x } from "@/features/order";\nexport const X = x;\n',
+      "src/components/shared/X.tsx",
+    );
+    assert.ok(ids.includes("import/no-restricted-paths"), ids.join(", "));
+  });
+
+  it("shared component importing the reference data is an error", async () => {
+    const ids = await ruleIdsFor(
+      'import { warehouseOptions } from "@/lib/references/warehouse-options";\nexport const X = warehouseOptions;\n',
+      "src/components/shared/X.tsx",
+    );
+    assert.ok(ids.includes("import/no-restricted-paths"), ids.join(", "));
+  });
+
+  it("shared component importing auth state is an error, auth types are allowed", async () => {
+    const value = await ruleIdsFor(
+      'import { useAuthStore } from "@/lib/auth/auth-store";\nexport const X = useAuthStore;\n',
+      "src/components/shared/X.tsx",
+    );
+    assert.ok(value.includes("@typescript-eslint/no-restricted-imports"), value.join(", "));
+
+    const inline = await ruleIdsFor(
+      'import { type PermissionCode, useAuthStore } from "@/lib/auth/auth-store";\nexport const X: PermissionCode = useAuthStore;\n',
+      "src/components/shared/X.tsx",
+    );
+    assert.ok(inline.includes("@typescript-eslint/no-restricted-imports"), inline.join(", "));
+
+    const type = await ruleIdsFor(
+      'import type { PermissionCode } from "@/lib/auth/me-permissions";\nexport type X = PermissionCode;\n',
+      "src/components/shared/X.tsx",
+    );
+    assert.ok(!type.includes("@typescript-eslint/no-restricted-imports"), type.join(", "));
+  });
+
+  it("mobile components may use auth state, only shared ones may not", async () => {
+    const ids = await ruleIdsFor(
+      'import { useAuthStore } from "@/lib/auth/auth-store";\nexport const X = useAuthStore;\n',
+      "src/components/mobile/X.tsx",
+    );
+    assert.ok(!ids.includes("@typescript-eslint/no-restricted-imports"), ids.join(", "));
+  });
+});
+
+describe("the constants layer", () => {
+  it("constants importing from lib or features is an error", async () => {
+    for (const code of [
+      'import { cn } from "@/lib/utils";\nexport const a = cn;\n',
+      'import { x } from "@/features/order";\nexport const a = x;\n',
+      'import { useAuthStore } from "@/lib/auth/auth-store";\nexport const a = useAuthStore;\n',
+    ]) {
+      for (const file of ["src/constants/labels.ts", "src/constants/mobile/labels.ts"]) {
+        const ids = await ruleIdsFor(code, file);
+        assert.ok(ids.includes("import/no-restricted-paths"), `${file}: ${ids.join(", ")}`);
+      }
+    }
+  });
+
+  it("constants importing other constants is allowed", async () => {
+    const ids = await ruleIdsFor(
+      'import { UI_LABELS } from "@/constants";\nimport { MOBILE_LABELS } from "@/constants/mobile";\nexport const a = [UI_LABELS, MOBILE_LABELS];\n',
+      "src/constants/mobile/labels.ts",
+    );
+    assert.ok(!ids.includes("import/no-restricted-paths"), ids.join(", "));
+  });
+
+  it("everything else may import constants", async () => {
+    const code = 'import { UI_LABELS } from "@/constants";\nexport const a = UI_LABELS;\n';
+    for (const file of [
+      "src/lib/a.ts",
+      "src/components/shared/A.tsx",
+      "src/features/receipt/a.ts",
+    ]) {
+      const ids = await ruleIdsFor(code, file);
+      assert.ok(!ids.includes("import/no-restricted-paths"), `${file}: ${ids.join(", ")}`);
+    }
   });
 });
 
@@ -129,6 +239,84 @@ describe("ui primitives and banned imports", () => {
   it("react-native Text in components/ui is allowed", async () => {
     const ids = await ruleIdsFor(code, "src/components/ui/text.tsx");
     assert.ok(!ids.includes("no-restricted-imports"), ids.join(", "));
+  });
+
+  it("react-native touchables other than TouchableOpacity are errors too", async () => {
+    for (const name of [
+      "TouchableHighlight",
+      "TouchableWithoutFeedback",
+      "TouchableNativeFeedback",
+    ]) {
+      const source = `import { ${name} } from "react-native";\nexport const A = ${name};\n`;
+      for (const file of [
+        "src/features/receipt/components/A.tsx",
+        "app/(app)/(tabs)/inbound/index.tsx",
+      ]) {
+        const ids = await ruleIdsFor(source, file);
+        assert.ok(ids.includes("no-restricted-imports"), `${name} in ${file}: ${ids.join(", ")}`);
+      }
+    }
+  });
+
+  it("gesture-handler's Pressable, TouchableOpacity and TextInput are errors in features and routes", async () => {
+    for (const name of ["Pressable", "TouchableOpacity", "TextInput"]) {
+      const source = `import { ${name} } from "react-native-gesture-handler";\nexport const A = ${name};\n`;
+      for (const file of [
+        "src/features/receipt/components/A.tsx",
+        "app/(app)/(tabs)/inbound/index.tsx",
+      ]) {
+        const ids = await ruleIdsFor(source, file);
+        assert.ok(ids.includes("no-restricted-imports"), `${name} in ${file}: ${ids.join(", ")}`);
+      }
+    }
+  });
+
+  it("gesture-handler's gestures stay allowed, and so is its Pressable in components/ui", async () => {
+    const gesture = await ruleIdsFor(
+      'import { GestureDetector } from "react-native-gesture-handler";\nexport const A = GestureDetector;\n',
+      "src/features/receipt/components/A.tsx",
+    );
+    assert.ok(!gesture.includes("no-restricted-imports"), gesture.join(", "));
+
+    const ui = await ruleIdsFor(
+      'import { Pressable } from "react-native-gesture-handler";\nexport const A = Pressable;\n',
+      "src/components/ui/A.tsx",
+    );
+    assert.ok(!ui.includes("no-restricted-imports"), ui.join(", "));
+  });
+
+  it("routes and layouts may not import data libraries, features and libs may", async () => {
+    for (const source of [
+      "@tanstack/react-query",
+      "axios",
+      "expo-secure-store",
+      "zustand",
+      "zustand/middleware",
+    ]) {
+      const code = `import * as lib from "${source}";\nexport default lib;\n`;
+      for (const file of ["app/(app)/(tabs)/inbound/index.tsx", "app/(app)/_layout.tsx"]) {
+        const ids = await ruleIdsFor(code, file);
+        assert.ok(
+          ids.includes("@typescript-eslint/no-restricted-imports"),
+          `${source} in ${file}: ${ids.join(", ")}`,
+        );
+      }
+      for (const file of ["src/features/receipt/a.ts", "src/lib/a.ts"]) {
+        const ids = await ruleIdsFor(code, file);
+        assert.ok(
+          !ids.includes("@typescript-eslint/no-restricted-imports"),
+          `${source} in ${file}: ${ids.join(", ")}`,
+        );
+      }
+    }
+  });
+
+  it("routes keep the mock-data ban next to the data libraries", async () => {
+    const ids = await ruleIdsFor(
+      'import { rows } from "@/lib/mock-data";\nexport default rows;\n',
+      "app/(app)/(tabs)/inbound/index.tsx",
+    );
+    assert.ok(ids.includes("no-restricted-imports"), ids.join(", "));
   });
 
   it("lib/mock-data import is an error everywhere", async () => {
@@ -181,6 +369,47 @@ describe("import order and typescript strictness", () => {
       "src/lib/a.ts",
     );
     assert.ok(ids.includes("@typescript-eslint/no-non-null-assertion"), ids.join(", "));
+  });
+});
+
+describe("file length", () => {
+  const limits = [
+    { where: "a feature file", file: "src/features/receipt/long.ts", limit: 200 },
+    { where: "a component", file: "src/components/shared/Long.tsx", limit: 150 },
+    {
+      where: "a feature's component",
+      file: "src/features/receipt/components/Long.tsx",
+      limit: 150,
+    },
+    { where: "a route file", file: "app/(app)/(tabs)/inbound/long.tsx", limit: 60 },
+  ];
+
+  for (const { where, file, limit } of limits) {
+    it(`${where} may have ${limit} lines and not ${limit + 1}`, async () => {
+      const ok = await ruleIdsFor(linesOf(limit), file);
+      assert.ok(!ok.includes("max-lines"), ok.join(", "));
+      const tooLong = await ruleIdsFor(linesOf(limit + 1), file);
+      assert.ok(tooLong.includes("max-lines"), tooLong.join(", "));
+    });
+  }
+
+  it("nav-config is the one named exception in components", async () => {
+    const nav = await ruleIdsFor(linesOf(400), "src/components/mobile/nav-config.ts");
+    assert.ok(!nav.includes("max-lines"), nav.join(", "));
+    const other = await ruleIdsFor(linesOf(400), "src/components/mobile/other-config.ts");
+    assert.ok(other.includes("max-lines"), other.join(", "));
+  });
+
+  it("tests and the rest of src are not limited", async () => {
+    for (const file of [
+      "src/components/shared/__tests__/Long.test.tsx",
+      "src/features/receipt/long.test.ts",
+      "src/lib/long.ts",
+      "src/constants/long.ts",
+    ]) {
+      const ids = await ruleIdsFor(linesOf(400), file);
+      assert.ok(!ids.includes("max-lines"), `${file}: ${ids.join(", ")}`);
+    }
   });
 });
 

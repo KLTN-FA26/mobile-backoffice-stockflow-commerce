@@ -13,8 +13,9 @@
  * revision) or a session change made in this module (generation: sign-out, same-user re-login).
  *
  * `session:*` data (pending requestIds, scan error lists) belongs to one user, recorded under
- * `MOBILE_STORAGE_KEYS.sessionOwner`: every session commit claims it and wipes another user's
- * data first, so nothing reaches the next worker on a shared device, even after a restart.
+ * `MOBILE_STORAGE_KEYS.sessionOwner`: every session commit claims it and wipes data that is not
+ * that user's (another owner's, or nobody's) first, so nothing reaches the next worker on a shared
+ * device, even after a restart. A stored token without a recorded owner is not restored at all.
  */
 import { AUTH_ERROR_CODES, AUTH_UI } from "@/constants/auth";
 import { MOBILE_STORAGE_KEYS } from "@/constants/mobile";
@@ -27,6 +28,7 @@ import { fetchMe, loginRequest, logoutRequest } from "./auth-api";
 import { getAuthRevision, useAuthStore } from "./auth-store";
 import {
   clearSession,
+  forgetStoredSession,
   getAccessToken,
   loadSession,
   persistSession,
@@ -65,14 +67,30 @@ function wipeSessionData(): void {
   }
 }
 
-/** Records `userId` as the owner of `session:*`, wiping another user's data first. */
+/**
+ * Records `userId` as the owner of `session:*`, wiping it first unless it is already that user's:
+ * data with no recorded owner (lost, or never written) could be anybody's.
+ */
 function claimSessionData(userId: string): void {
   try {
-    const owner = kv.get(MOBILE_STORAGE_KEYS.sessionOwner);
-    if (owner !== null && owner !== userId) sessionClearAll();
+    if (kv.get(MOBILE_STORAGE_KEYS.sessionOwner) !== userId) sessionClearAll();
     kv.set(MOBILE_STORAGE_KEYS.sessionOwner, userId);
   } catch (error: unknown) {
     console.error("Could not hand session data to the signed-in user", error);
+  }
+}
+
+/**
+ * Whether the kv-store still records who signed in. It does not after a reinstall, which wipes the
+ * kv-store while the iOS Keychain keeps the token: nobody can vouch for that token any more. A
+ * failing kv-store counts as "no": the worst case is one more sign-in.
+ */
+function hasSessionOwner(): boolean {
+  try {
+    return kv.get(MOBILE_STORAGE_KEYS.sessionOwner) !== null;
+  } catch (error: unknown) {
+    console.error("Could not read who owns the stored session", error);
+    return false;
   }
 }
 
@@ -98,6 +116,12 @@ async function bootstrap(isCurrent: () => boolean): Promise<void> {
   if (session === null) {
     setAccessToken(null);
     store().logout();
+    return;
+  }
+  if (!hasSessionOwner()) {
+    store().logout();
+    await clearSession();
+    revokeToken(session.accessToken);
     return;
   }
   setAccessToken(session.accessToken);
@@ -149,7 +173,8 @@ export function revalidateSession(): Promise<void> {
  */
 export function handleUnauthorized(_error: ApiError, requestToken: string | null): void {
   try {
-    if (requestToken !== getAccessToken()) return;
+    // A request that carried no token says nothing about the session, whatever is in memory.
+    if (requestToken === null || requestToken !== getAccessToken()) return;
     const { status, sessionExpired, markSessionExpired } = store();
     if (status === "authenticated" && !sessionExpired) markSessionExpired();
   } catch (error: unknown) {
@@ -159,16 +184,38 @@ export function handleUnauthorized(_error: ApiError, requestToken: string | null
 
 /* ── Sign-in, re-login, sign-out ────────────────────────────────────── */
 
-/** Drops a token this module obtained but will not keep, and asks the backend to revoke it. */
-async function discardToken(accessToken: string): Promise<void> {
-  if (getAccessToken() === accessToken) setAccessToken(null);
-  await logoutRequest(accessToken).catch(() => undefined);
+/** Asks the backend to end the session of `token`, best effort; nobody waits for the answer. */
+function revokeToken(token: string): void {
+  void logoutRequest(token).catch(() => undefined);
 }
 
 /**
- * login → /me with the new token → SecureStore, then `commit` in the same tick. A login error
- * (wrong password, lock, rate limit…) passes through for the login form to map. Any later failure
- * discards the new token and throws SESSION_BOOTSTRAP_FAILED: no half-signed-in state remains.
+ * /me with the candidate token, then SecureStore. Null when either failed, or when the session
+ * changed meanwhile (sign-out, another sign-in): such an answer is stale and must not revive or
+ * replace anything.
+ */
+async function verifyAndStore(
+  accessToken: string,
+  expiresAt: number,
+  isCurrent: () => boolean,
+): Promise<AuthUser | null> {
+  try {
+    const user = await fetchMe({ token: accessToken });
+    if (!isCurrent()) return null;
+    await persistSession({ accessToken, expiresAt });
+    return isCurrent() ? user : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * login → /me with the new token → SecureStore → token swap and `commit` in the same tick. The
+ * session on screen keeps its own token until then: an early re-login that fails leaves a still
+ * valid session usable. A login error (wrong password, lock, rate limit…) passes through for the
+ * login form to map. Any later failure gives the new token up (revoked without waiting, its stored
+ * copy taken back, the current session untouched) and throws SESSION_BOOTSTRAP_FAILED. Once the
+ * new session is shown, the token it replaced is revoked.
  */
 async function establishSession<T>(
   input: LoginRequest,
@@ -178,22 +225,17 @@ async function establishSession<T>(
   const isCurrent = currentSessionGuard();
   const { accessToken, expiresInSeconds } = await loginRequest(input);
   const expiresAt = now + expiresInSeconds * 1000;
+  const user = await verifyAndStore(accessToken, expiresAt, isCurrent);
+  if (user === null) {
+    revokeToken(accessToken);
+    await forgetStoredSession(accessToken);
+    throw sessionBootstrapFailed();
+  }
+  const previous = getAccessToken();
   setAccessToken(accessToken);
-  let user: AuthUser;
-  try {
-    user = await fetchMe();
-    await persistSession({ accessToken, expiresAt });
-  } catch {
-    await discardToken(accessToken);
-    throw sessionBootstrapFailed();
-  }
-  if (!isCurrent()) {
-    // Signed out while this ran: take the write back instead of reviving the session.
-    await clearSession();
-    await discardToken(accessToken);
-    throw sessionBootstrapFailed();
-  }
-  return commit(user, expiresAt);
+  const result = commit(user, expiresAt);
+  if (previous !== null && previous !== accessToken) revokeToken(previous);
+  return result;
 }
 
 /** Login screen. A second call while one is in flight gets the same promise. */
@@ -253,5 +295,5 @@ export async function signOut(queryClient: QueryClient): Promise<void> {
   wipeSessionData();
   queryClient.clear();
   store().logout();
-  if (token !== null) void logoutRequest(token).catch(() => undefined);
+  if (token !== null) revokeToken(token);
 }

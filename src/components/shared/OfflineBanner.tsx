@@ -4,6 +4,7 @@ import { View } from "react-native";
 
 import { MOBILE_LABELS } from "@/constants/mobile";
 
+import { useAnnounce } from "@/hooks/use-announce";
 import { useThemeColors } from "@/hooks/use-theme-colors";
 
 import { Text } from "@/components/ui";
@@ -17,8 +18,11 @@ const ICON_SIZE = 16;
 export function OfflineBanner() {
   const { isConnected } = useNetInfo();
   const colors = useThemeColors();
+  const offline = isConnected === false;
+  // Android reads the live region below by itself; iOS has none.
+  useAnnounce(offline ? MOBILE_LABELS.offline : null);
 
-  if (isConnected !== false) return null;
+  if (!offline) return null;
 
   return (
     <View

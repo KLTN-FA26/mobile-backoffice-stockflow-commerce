@@ -2,9 +2,9 @@
 export default {
   extends: ["@commitlint/config-conventional"],
   rules: {
-    // Scope should match a module or area of the app
+    // Scope, when given, must be one of these (level 2 = error, so a typo cannot slip in as a warning)
     "scope-enum": [
-      1,
+      2,
       "always",
       [
         "receipt",

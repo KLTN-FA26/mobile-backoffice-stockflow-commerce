@@ -18,7 +18,7 @@ Port module `$1` từ web sang mobile bằng skill **`port-from-web`** (spec §1
 
 ## Ràng buộc
 
-- **Cấm** sửa tay file `verbatim`, sửa `src/components/ui/**`, đổi tên field / tên trạng thái so với web, gộp hai module vào một feature, hardcode chuỗi hiển thị.
+- **Cấm** sửa tay file `verbatim`, sửa file `src/components/ui/**` đã có trên `main` (hook chặn; primitive mới thêm trên nhánh thì được), đổi tên field / tên trạng thái so với web, gộp hai module vào một feature, hardcode chuỗi hiển thị.
 - Giữ đúng hành vi web ở các điểm lệch đã ghi (G1–G18) — không tự sửa.
 - Giả định chưa chốt → comment `// ASSUMPTION (open-question Xn)` ngay tại code.
 - Viết test đỏ trước, code xanh sau; test bắt buộc theo `testing.md`.

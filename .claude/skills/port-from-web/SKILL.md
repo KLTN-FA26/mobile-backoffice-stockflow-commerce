@@ -34,7 +34,7 @@ Phân loại từng file `src/features/<feature>/*` của web (spec §6.2):
 
 ```bash
 pnpm sync:add src/features/<f>/schemas.ts src/features/<f>/lifecycle.ts …                    # verbatim (mặc định)
-pnpm sync:add src/features/<f>/api.ts --mode adapted --note "client mobile, không BFF"        # adapted
+pnpm sync:add src/features/<f>/api.ts --mode adapted --note "client mobile, không BFF"        # adapted: --note bắt buộc
 ```
 
 - File `verbatim` **không sửa tay**. Lint đỏ vì luật chỉ có ở mobile → thêm block vào `VERBATIM_OVERRIDES` trong `eslint.config.mjs` (kèm 1 dòng lý do).
@@ -46,7 +46,7 @@ Giữ **y nguyên**: endpoint, params, parse DTO tại biên, mã quyền, idemp
 
 - Client → `@/lib/api/client` (gọi thẳng BE, không đường BFF; không `X-Warehouse-Id`).
 - Danh sách → `createInfiniteListQuery`; key qua `createQueryKeys`; toast → `sonner-native` (qua factory).
-- `sessionStorage` → kv-store `session:*` (`requestId`, danh sách quét lỗi); `crypto.randomUUID()` → `lib/platform/uuid`.
+- `sessionStorage` → kv-store `session:*` (`requestId`, danh sách quét lỗi); `crypto.randomUUID()` dùng nguyên (polyfill `installCryptoPolyfill` ở `lib/platform/polyfills` đã làm nó chạy trên Hermes; không có và không cần `lib/platform/uuid`).
 - Mutation đặt invalidate/toast ở factory, không lặp ở component (`api-conventions.md`).
 
 ## 4. Dựng màn
@@ -58,10 +58,10 @@ Theo skill **`mobile-screen`**: chọn loại màn từng route ở §5, file ro
 
 - Lifecycle: đủ trạng thái, terminal `[]`. Action-gating: ≥ 3 bộ quyền. Mỗi `BR-xx` một test có cite docs.
 - Theo loại màn: Danh sách (skeleton, 2 loại rỗng, lỗi, cuộn thêm) · Chi tiết (nút đúng trạng thái + quyền, `ConfirmSheet`) · Form (validate, map lỗi server) · Trạm (hàng đợi quét, gửi lại/bỏ qua, danh sách quét lỗi, chặn bấm 2 lần).
-- Test port từ web chạy xanh với case nguyên vẹn. Coverage `features/*/{schemas,lifecycle,selectors}` ≥ 90%, component ≥ 70%.
+- Test port từ web chạy xanh với case nguyên vẹn. Coverage nằm trong cổng merge: `features/*/{schemas,lifecycle,selectors}` ≥ 90% từng file (PR feature đầu tiên thêm key vào `jest.config.js` và `collectCoverageFrom`, xem `testing.md`), component ≥ 70% gộp thư mục.
 
 ## 6. Hoàn tất
 
-1. `pnpm run validate` — typecheck → lint → test → test:scripts → sync:check → doctor → export:check. **Dán output thật.**
+1. `pnpm run validate` — typecheck → lint → test:coverage → test:scripts → sync:check → doctor → export:check. **Dán output thật.**
 2. Chạy `/design-check` và `architecture-reviewer` trên module; sửa lỗi do mình gây ra.
 3. Commit conventional, subject viết thường, scope thuộc danh sách (`receipt`, `inventory`, `inventory-item`, `transfer`, `move`, `order`, `picking`, `packing`, `shipping`, `sync`, …), **không** trailer công cụ (skill `git-commits`).

@@ -23,8 +23,8 @@ export const STATUS_DOT_GESTURE_ID = "status-dot-long-press";
 /**
  * The one way to show a record status (like the web `StatusDot`): the tone comes from the status
  * map, the label is Vietnamese. The web puts the English original in a hover title; a phone has no
- * hover, so a long press shows the original inline as "nhãn Việt — status" (N7), and the screen
- * reader gets the same string as the label.
+ * hover, so a long press shows the original inline as "nhãn Việt — status" (N7). A screen reader
+ * hears the Vietnamese label, then the English original as the hint.
  *
  * The long press is a gesture-handler gesture, not a `Pressable`: a `Pressable` takes the JS
  * responder even when it only has `onLongPress`, so a quick tap on the status would never reach
@@ -54,7 +54,12 @@ export function StatusDot({ domain, status, size = "sm" }: StatusDotProps) {
   return (
     <View className="gap-1 self-start">
       <GestureDetector gesture={longPress}>
-        <View accessible accessibilityRole="text" accessibilityLabel={title}>
+        <View
+          accessible
+          accessibilityRole="text"
+          accessibilityLabel={labelVi}
+          accessibilityHint={status}
+        >
           {dot}
         </View>
       </GestureDetector>

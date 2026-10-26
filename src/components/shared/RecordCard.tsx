@@ -1,9 +1,8 @@
-import { Pressable, View } from "react-native";
-
-import { SHADOW_SM } from "@/lib/tokens";
+import { View } from "react-native";
 
 import { Text } from "@/components/ui";
 
+import { Card } from "./Card";
 import { SlotText } from "./SlotText";
 
 import type { ReactNode } from "react";
@@ -24,8 +23,6 @@ export type RecordCardProps = {
   onPress?: () => void;
   accessibilityLabel?: string;
 };
-
-const CARD_CLASS = "rounded-md border border-border-default bg-bg-surface p-4";
 
 /** A list row as a card: code and status, related party, date and quantity. */
 export function RecordCard({
@@ -69,28 +66,15 @@ export function RecordCard({
     </View>
   );
 
-  if (onPress === undefined) {
-    return (
-      <View
-        accessible={accessibilityLabel !== undefined}
-        accessibilityLabel={accessibilityLabel}
-        className={CARD_CLASS}
-        style={SHADOW_SM}
-      >
-        {body}
-      </View>
-    );
-  }
-
   return (
-    <Pressable
-      accessibilityRole="button"
+    <Card
+      // A button reads as one element anyway; a plain card only when it has a label to read.
+      accessible={onPress !== undefined || accessibilityLabel !== undefined}
       accessibilityLabel={accessibilityLabel}
       onPress={onPress}
-      className={`${CARD_CLASS} active:bg-bg-subtle`}
-      style={SHADOW_SM}
+      className="p-4"
     >
       {body}
-    </Pressable>
+    </Card>
   );
 }

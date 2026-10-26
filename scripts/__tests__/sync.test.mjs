@@ -121,7 +121,15 @@ describe("sync:add", () => {
     webCommit(web, { "src/b.ts": "export const B = 1;\n" });
 
     succeeds("sync-add", ["src/b.ts"]);
-    succeeds("sync-add", ["src/a.ts", "--target", "src/mobile/a.ts", "--mode", "adapted"]);
+    succeeds("sync-add", [
+      "src/a.ts",
+      "--target",
+      "src/mobile/a.ts",
+      "--mode",
+      "adapted",
+      "--note",
+      "đã chỉnh cho mobile",
+    ]);
     succeeds("sync-add", ["src/a.ts", "--target", "src/aa.ts", "--note", "hai từ"]);
 
     const files = readManifest(mobile).files;
@@ -188,6 +196,18 @@ describe("sync:add", () => {
     assert.deepEqual(readManifest(mobile).files, []);
   });
 
+  it("add refuses an adapted entry without a note and writes nothing", () => {
+    const before = readMobile("port-manifest.json");
+
+    const result = fails("sync-add", ["src/a.ts", "--mode", "adapted"]);
+
+    assert.match(result.stderr, /--note/);
+    assert.equal(readMobile("port-manifest.json"), before);
+    assert.equal(fs.existsSync(path.join(mobile, "src/a.ts")), false);
+    fails("sync-add", ["src/a.ts", "--mode", "adapted", "--note", "  "]);
+    assert.deepEqual(readManifest(mobile).files, []);
+  });
+
   it("add writes LF even when the web blob has CRLF", () => {
     webCommit(web, { "src/crlf.ts": "export const C = 1;\r\nexport const D = 2;\r\n" });
 
@@ -200,7 +220,15 @@ describe("sync:add", () => {
 describe("sync:check", () => {
   it("check passes when in sync", () => {
     succeeds("sync-add", ["src/a.ts"]);
-    succeeds("sync-add", ["src/a.ts", "--target", "src/adapted.ts", "--mode", "adapted"]);
+    succeeds("sync-add", [
+      "src/a.ts",
+      "--target",
+      "src/adapted.ts",
+      "--mode",
+      "adapted",
+      "--note",
+      "đã chỉnh cho mobile",
+    ]);
 
     assert.deepEqual(problems(), []);
     assert.match(succeeds("sync-check").stdout, /port-manifest: 2 file, không có lệch/);
@@ -222,7 +250,7 @@ describe("sync:check", () => {
   });
 
   it("check flags changed source for adapted entry", () => {
-    succeeds("sync-add", ["src/a.ts", "--mode", "adapted"]);
+    succeeds("sync-add", ["src/a.ts", "--mode", "adapted", "--note", "đã chỉnh cho mobile"]);
     webCommit(web, { "src/a.ts": A_V2 });
 
     assert.deepEqual(problems(), [{ target: "src/a.ts", problem: "source-changed" }]);
@@ -230,7 +258,7 @@ describe("sync:check", () => {
   });
 
   it("check does not flag local edits of an adapted target", () => {
-    succeeds("sync-add", ["src/a.ts", "--mode", "adapted"]);
+    succeeds("sync-add", ["src/a.ts", "--mode", "adapted", "--note", "đã chỉnh cho mobile"]);
     writeMobile("src/a.ts", "export const A = 'adapted for mobile';\n");
 
     assert.deepEqual(problems(), []);
@@ -238,7 +266,15 @@ describe("sync:check", () => {
 
   it("check flags missing source", () => {
     succeeds("sync-add", ["src/a.ts"]);
-    succeeds("sync-add", ["src/a.ts", "--target", "src/adapted.ts", "--mode", "adapted"]);
+    succeeds("sync-add", [
+      "src/a.ts",
+      "--target",
+      "src/adapted.ts",
+      "--mode",
+      "adapted",
+      "--note",
+      "đã chỉnh cho mobile",
+    ]);
     webCommit(web, { "src/a.ts": null });
 
     assert.deepEqual(problems(), [
@@ -268,7 +304,15 @@ describe("sync:check", () => {
 
   it("check reads the pinned ref, not the web checkout", () => {
     succeeds("sync-add", ["src/a.ts"]);
-    succeeds("sync-add", ["src/a.ts", "--target", "src/adapted.ts", "--mode", "adapted"]);
+    succeeds("sync-add", [
+      "src/a.ts",
+      "--target",
+      "src/adapted.ts",
+      "--mode",
+      "adapted",
+      "--note",
+      "đã chỉnh cho mobile",
+    ]);
     const refBefore = git(web, "rev-parse", WEB_REF);
 
     webCommit(web, { "src/a.ts": A_V2 }, { moveRef: false });
@@ -341,7 +385,7 @@ describe("sync:pull and sync:ack", () => {
   });
 
   it("pull refuses adapted entry", () => {
-    succeeds("sync-add", ["src/a.ts", "--mode", "adapted"]);
+    succeeds("sync-add", ["src/a.ts", "--mode", "adapted", "--note", "đã chỉnh cho mobile"]);
     writeMobile("src/a.ts", "export const A = 'adapted';\n");
     webCommit(web, { "src/a.ts": A_V2 });
     const manifestBefore = readMobile("port-manifest.json");
@@ -413,5 +457,30 @@ describe("sync-lib", () => {
     assert.throws(() => readManifest(mobile), /outside\.ts/);
     writeMobile("port-manifest.json", "{ not json");
     assert.throws(() => readManifest(mobile), /port-manifest\.json/);
+  });
+
+  it("readManifest requires a note on every adapted entry", () => {
+    const write = (files) =>
+      writeMobile(
+        "port-manifest.json",
+        JSON.stringify({
+          webRepoEnv: WEB_ENV,
+          webRepoDefault: "../stockflow-ui",
+          webRef: WEB_REF,
+          files,
+        }),
+      );
+    const entry = { source: "src/a.ts", target: "src/a.ts", mode: "adapted", sourceBlob: "abc" };
+
+    write([entry]);
+    assert.throws(() => readManifest(mobile), /files\[0\]\.note/);
+    write([{ ...entry, note: "" }]);
+    assert.throws(() => readManifest(mobile), /files\[0\]\.note/);
+    write([{ ...entry, note: "   " }]);
+    assert.throws(() => readManifest(mobile), /files\[0\]\.note/);
+    write([{ ...entry, note: "bỏ phụ thuộc next" }]);
+    assert.equal(readManifest(mobile).files[0].note, "bỏ phụ thuộc next");
+    write([{ ...entry, mode: "verbatim" }]);
+    assert.equal(readManifest(mobile).files[0].mode, "verbatim");
   });
 });

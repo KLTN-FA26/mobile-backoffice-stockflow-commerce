@@ -1,8 +1,13 @@
-import { useQueryClient } from "@tanstack/react-query";
+import { BottomSheetModal } from "@gorhom/bottom-sheet";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { screen } from "@testing-library/react-native";
+import { useEffect, useRef } from "react";
 import { Text } from "react-native";
 
+import { PERMISSION_QUERY } from "@/constants/permissions";
+
 import { api } from "@/lib/api/client";
+import { ApiError } from "@/lib/api/error";
 import { useAuthStore } from "@/lib/auth/auth-store";
 import { Can } from "@/lib/auth/components/Can";
 import { meKeys } from "@/lib/auth/me-permissions";
@@ -14,6 +19,22 @@ function Gate() {
     <Can permission="procurement-suppliers:READ" fallback={<Text>denied</Text>}>
       <Text>allowed</Text>
     </Can>
+  );
+}
+
+/** A screen whose own query the backend refuses with 403. */
+function ForbiddenOrders() {
+  useQuery({ queryKey: ["orders"], queryFn: () => api.get("/orders") });
+  return null;
+}
+
+function OpenSheet() {
+  const sheet = useRef<BottomSheetModal>(null);
+  useEffect(() => sheet.current?.present(), []);
+  return (
+    <BottomSheetModal ref={sheet}>
+      <Text>sheet content</Text>
+    </BottomSheetModal>
   );
 }
 
@@ -78,6 +99,34 @@ describe("renderWithProviders", () => {
 
     expect(screen.getByText("has-client")).toBeTruthy();
     expect(useAuthStore.getState()).toMatchObject({ status: "unknown", authorizationVersion: 0 });
+  });
+
+  it("uses the app's query client: a 403 elsewhere reloads the permissions", async () => {
+    const get = jest.mocked(api.get);
+    get.mockImplementation(async (url) => {
+      if (url === PERMISSION_QUERY.path) {
+        return { data: { roles: [], permissions: [], dataScope: "WAREHOUSE" } };
+      }
+      throw new ApiError(403, "FORBIDDEN", "Forbidden");
+    });
+
+    await renderWithProviders(
+      <>
+        <Gate />
+        <ForbiddenOrders />
+      </>,
+      { permissions: ["procurement-suppliers:READ"] },
+    );
+
+    // The admin took the code away: the app refetches the grants and the gated content goes.
+    expect(await screen.findByText("denied")).toBeTruthy();
+    expect(get).toHaveBeenCalledWith(PERMISSION_QUERY.path, expect.anything());
+  });
+
+  it("renders a sheet through the sheet provider", async () => {
+    await renderWithProviders(<OpenSheet />);
+
+    expect(screen.getByText("sheet content")).toBeTruthy();
   });
 
   it("gives every render its own QueryClient that does not retry", async () => {

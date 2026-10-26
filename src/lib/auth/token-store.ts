@@ -76,6 +76,23 @@ export async function loadSession(now = Date.now()): Promise<StoredSession | nul
   return session.expiresAt > now ? session : null;
 }
 
+/**
+ * Deletes the stored session only if it holds `accessToken`: a sign-in or re-login that gives up
+ * takes back its own write, never the copy of the session on screen (nor the memory token).
+ * Never rejects; an unreadable item is left for `loadSession` to clean up.
+ */
+export async function forgetStoredSession(accessToken: string): Promise<void> {
+  let raw: string | null;
+  try {
+    raw = await SecureStore.getItemAsync(MOBILE_STORAGE_KEYS.secureSession);
+  } catch {
+    return;
+  }
+  if (raw !== null && parseStoredSession(raw)?.accessToken === accessToken) {
+    await deleteStoredSessionQuietly();
+  }
+}
+
 /** Clears the memory token first, then the stored copy. Never rejects, so logout always goes on. */
 export async function clearSession(): Promise<void> {
   memoryToken = null;

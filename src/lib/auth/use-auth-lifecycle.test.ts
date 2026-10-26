@@ -3,9 +3,11 @@ import MockAdapter from "axios-mock-adapter";
 import { AppState } from "react-native";
 
 import { AUTH_UI } from "@/constants/auth";
+import { MOBILE_STORAGE_KEYS } from "@/constants/mobile";
 
 import { api } from "@/lib/api/client";
 import { ApiError } from "@/lib/api/error";
+import { kv } from "@/lib/platform/storage";
 
 import { fetchMe } from "./auth-api";
 import { useAuthStore } from "./auth-store";
@@ -39,8 +41,10 @@ const removeAppStateListener = jest.fn();
 
 const auth = () => useAuthStore.getState();
 
+/** A session a previous run left: the token in SecureStore and its owner in the kv-store. */
 async function storeSession() {
   await persistSession({ accessToken: "tok-stored", expiresAt: Date.now() + 3_600_000 });
+  kv.set(MOBILE_STORAGE_KEYS.sessionOwner, ALICE.userId);
 }
 
 /** A 401 from a business endpoint, as the HTTP client sees it. */

@@ -29,12 +29,15 @@ Trước khi dựng màn mới: chọn đúng 1 trong 5 loại rồi chạy chec
 ## Điều hướng (§2.2)
 
 - Mỗi tab có Stack riêng để thanh tab hiện ở hub và danh sách; **trạm thao tác và form toàn màn ẩn thanh tab**
-  (`tabBarStyle: { display: "none" }`) — thêm chỗ và tránh chuyển tab nhầm giữa ca.
+  (`tabBarStyle: { display: "none", height: 0 }`) — thêm chỗ và tránh chuyển tab nhầm giữa ca. **Phải có `height: 0`**: `BottomActionBar` đọc
+  `BottomTabBarHeightContext` để biết có thanh tab bên dưới không; thanh chỉ ẩn bằng `display: "none"` vẫn có thể báo chiều cao, khiến thanh hành động bỏ inset đáy
+  (cần kiểm trên máy thật: thanh hành động không chạm vạch home).
 - 4 tab: Nhập hàng · Kho · Thực hiện đơn · Tài khoản. Tab không còn mục nào thấy được → ẩn tab (`NAV_GROUPS` ở `src/components/mobile/nav-config.ts`
   giữ đúng item + mã quyền của `BackofficeShell.tsx` web; không đặt trong `src/constants/mobile` vì cần kiểu `PermissionCode` của `@/lib/auth`,
   mà `src/constants` không import gì trong `src/`).
 - Chưa biết quyền (đang tải / lỗi tải lần đầu) → giữ đủ tab; hub hiện skeleton hoặc `LoadErrorState kind="permissions"` + "Thử lại".
-  Refetch nền lỗi (mỗi lần quay lại foreground) → giữ quyền đã biết, không đổi tab (R39).
+  Refetch nền lỗi (mỗi lần quay lại foreground) → giữ quyền đã biết, không đổi tab (R39); khi đang thử lại sau lỗi lần đầu, hub giữ `LoadErrorState` với nút
+  "Thử lại" quay và khoá (không nháy sang skeleton).
 
 ## Overlay — sheet hay màn riêng
 
@@ -55,8 +58,9 @@ Trạng thái và quyền quyết định nút nào hiện, qua hai lớp:
 1. `lifecycle.ts` — transition table chép từ bảng "Chuyển tiếp cho phép" trong docs. Terminal state phải `=== []`, không có nút mutating nào.
 2. `allowedActions(status, …)` trả về action descriptor (kèm lý do khoá nếu có) → `BottomActionBar` / sheet "Thao tác khác" render.
 
-Quyền dùng mã `resource:ACTION` qua `<Can>`, `useCan`, `usePermissionChecker` (`PermissionBoundary` viết lại cho RN). Đang tải/lỗi quyền =
-không có quyền (ẩn nút, không nháy).
+Quyền dùng mã `resource:ACTION` qua `<Can>`, `useCan`, `usePermissionChecker` (`PermissionBoundary` viết lại cho RN). **Chưa biết quyền nào** (đang tải /
+lỗi tải lần đầu) = không có quyền (ẩn nút, không nháy). **Đã có quyền trong cache thì refetch lỗi giữ quyền đã biết** (R55; 401 vì phiên hết hạn, mất mạng, 503): màn
+đang mở và bản nháp của nó không bị unmount, nên đăng nhập lại tại chỗ (N8) không làm mất gì. Lỗi/từ chối chỉ áp khi chưa có dữ liệu quyền.
 
 **UI-only** — mọi chỗ gate phải có comment, vì BE mới là nơi quyết định:
 
@@ -67,7 +71,9 @@ không có quyền (ẩn nút, không nháy).
 
 ## Quy ước khác
 
-- Không `Text`/`Pressable`/`Button`/`TextInput`/`TouchableOpacity` của `react-native` trong `features/**` và `app/**` — dùng `@/components/ui`.
+- Không `Text`/`Pressable`/`Button`/`TextInput`/`TouchableOpacity`/`TouchableHighlight`/`TouchableWithoutFeedback` của `react-native` (và `Pressable`/`TouchableOpacity`/
+  `TextInput` của `react-native-gesture-handler`) trong `features/**` và `app/**` — dùng `@/components/ui`. File route không import `@tanstack/react-query`, `axios`,
+  `expo-secure-store`, `zustand` (ESLint bắt; `feature-architecture.md`).
 - Chuỗi hiển thị mới của mobile (không có trong constants web) → `src/constants/mobile/**`, không gõ trong component (G18).
 - Giữ đúng hành vi web ở các điểm lệch đã ghi (G1–G18 trong `web-parity.md`), kể cả khi trông như lỗi.
 - Thông tin web chỉ hiện khi hover → hiện inline hoặc nhấn giữ (N7): lý do khoá nút, UUID đầy đủ, nhãn gốc tiếng Anh của trạng thái.

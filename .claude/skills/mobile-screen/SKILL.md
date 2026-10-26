@@ -23,12 +23,12 @@ thêm loại.
 
 ## 2. Checklist chung — mọi màn
 
-- [ ] File route trong `app/` ≤ 60 dòng, chỉ import `@/features/*` + `@/components/*`; logic và JSX nằm trong `src/features/<feature>/components/` (≤ 150 dòng/file).
-- [ ] Dùng component đã có (`shared-components.md`) — không viết lại; không `Text`/`Pressable`/`Button`/`TextInput` của `react-native` trong `features/**`, `app/**`.
+- [ ] File route trong `app/` ≤ 60 dòng, chỉ import `@/features/*`, `@/components/*` và `@/constants/*` (không `@/lib`, `@/hooks`, `@/providers`, thư viện dữ liệu — ESLint bắt; riêng layout gốc được miễn); logic và JSX nằm trong `src/features/<feature>/components/` (≤ 150 dòng/file).
+- [ ] Dùng component đã có (`shared-components.md`) — không viết lại; không `Text`/`Pressable`/`Button`/`TextInput`/touchable của `react-native` (hay gesture-handler) trong `features/**`, `app/**`; nút chỉ có icon → `IconButton`, khối thẻ → `Card`, ô chọn → `SelectField`.
 - [ ] Màu / radius / cỡ chữ chỉ qua token; không hex, gradient, hồng; dark mode đúng (`design-tokens.md`).
 - [ ] Chuỗi hiển thị lấy từ `src/constants/**` hoặc `src/constants/mobile/**`; trạng thái chỉ qua `<StatusDot domain status>`.
 - [ ] Vùng chạm ≥ 44pt; icon-button có `accessibilityLabel`; `accessibilityRole` đúng; `maxFontSizeMultiplier` ≈ 1.3 cho chữ trong thẻ.
-- [ ] Mọi trạng thái có UI (`api-conventions.md` §3.5): skeleton đúng hình, 2 loại rỗng, `LoadErrorState` + "Mã tra cứu", `OfflineBanner`, nút khoá + spinner khi gửi (chặn bấm 2 lần bằng ref).
+- [ ] Mọi trạng thái có UI (`api-conventions.md` §3.5): skeleton đúng hình, 2 loại rỗng, `LoadErrorState` + "Mã tra cứu", `OfflineBanner` (đã có trong `ScreenHeader`, đừng mount thêm), nút khoá + spinner khi gửi (chặn bấm 2 lần bằng `useSubmitLatch`).
 - [ ] Nút/thao tác gate qua `allowedActions` + `<Can>`, có comment `// Backend phải re-check (BR-xx)`; không rải `if/else` trong JSX.
 - [ ] Thông tin hover của web → hiện inline hoặc nhấn giữ (lý do khoá nút, UUID đầy đủ, nhãn gốc).
 - [ ] Chọn / lọc / xác nhận / nhập lý do → bottom sheet; form nhiều trường/dòng → màn riêng.
@@ -38,7 +38,7 @@ thêm loại.
 
 ### Hub
 
-- [ ] `HubMenu` đọc `NAV_GROUPS` (`src/components/mobile/nav-config.ts`) qua `useNavVisibility`: icon 14–16, nhãn Việt, tooltip tiếng Anh dạng dòng phụ; mục ẩn theo quyền (kể cả `anyPermission`); đang tải quyền → skeleton, lỗi tải lần đầu → `LoadErrorState kind="permissions"` + "Thử lại" (không ẩn tab khi chưa biết quyền); refetch nền lỗi → giữ quyền đã biết.
+- [ ] `HubMenu` đọc `NAV_GROUPS` (`src/components/mobile/nav-config.ts`) qua `useNavVisibility`: icon 14–16, nhãn Việt, tooltip tiếng Anh dạng dòng phụ; mục ẩn theo quyền (kể cả `anyPermission`); đang tải quyền → skeleton, lỗi tải lần đầu → `LoadErrorState kind="permissions"` + "Thử lại" (nút quay khi đang thử lại; không ẩn tab khi chưa biết quyền); refetch nền lỗi → giữ quyền đã biết (R39/R55).
 - [ ] Mục ComingSoon gắn nhãn "Đang phát triển" và dẫn tới màn `ComingSoon`.
 - [ ] Tab không còn mục nào thấy được → ẩn tab.
 
@@ -61,12 +61,12 @@ thêm loại.
 - [ ] Một cột; section card; control 48px; `KeyboardAvoidingView`; ẩn thanh tab; `BottomActionBar` Huỷ / Lưu.
 - [ ] react-hook-form + `zodResolver` với **Input schema** (BR refine có cite docs); dòng động = thẻ, sửa trong sheet (`useFieldArray`).
 - [ ] Lỗi server map về trường/thẻ qua `ApiError.fieldErrors` (`lines[i].field` → thẻ i); `version` + `OPTIMISTIC_LOCK` đúng như web khi có.
-- [ ] Ô mã → `ScanField`; số lượng → `QuantityStepper`; ngày → `DateField`; chọn một có tìm → `SelectSheet`.
+- [ ] Ô mã → `ScanField`; số lượng → `QuantityStepper`; ngày → `DateField`; ô chọn → `SelectField` mở `SelectSheet` (chọn một có tìm).
 - [ ] Test: validate · map lỗi server.
 
 ### Trạm
 
-- [ ] Đầu màn: thanh tiến độ + trạng thái; **thẻ việc đang làm** (viền brand) chứa `ScanField` + phản hồi (`ScanFeedback`) + stepper.
+- [ ] Đầu màn: thanh tiến độ + trạng thái; **thẻ việc đang làm** (viền brand) chứa `ScanField` + phản hồi (`ScanFeedbackBanner`, qua `useScanFeedback`) + stepper. Không đặt `ScanField` trong `Sheet`.
 - [ ] Danh sách dòng/kiện thu gọn bên dưới, chuyển bằng `Segmented`; `BottomActionBar` hành động chính; ẩn thanh tab.
 - [ ] Hàng đợi quét, gửi lại / bỏ qua, danh sách quét lỗi giữ đúng logic web (`scanning.md`); polling chỉ khi màn focus + app foreground.
 - [ ] Test: hàng đợi quét · gửi lại/bỏ qua · danh sách quét lỗi · chặn bấm 2 lần.

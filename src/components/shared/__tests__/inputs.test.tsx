@@ -1,7 +1,15 @@
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
-import { fireEvent, render, screen, userEvent, within } from "@testing-library/react-native";
+import {
+  act,
+  fireEvent,
+  render as renderScreen,
+  screen,
+  userEvent,
+  within,
+} from "@testing-library/react-native";
 import { useState } from "react";
-import { Platform, StyleSheet, Text as RNText } from "react-native";
+import { AccessibilityInfo, Platform, StyleSheet, Text as RNText } from "react-native";
 
 import { MOBILE_LABELS, PICKER_LOCALE, SHEET_LABELS } from "@/constants/mobile";
 
@@ -25,11 +33,18 @@ import {
   FilterSheet,
   QuantityStepper,
   SearchField,
+  SelectField,
   SelectSheet,
 } from "..";
 
 import type { ConfirmSheetProps, SelectSheetOption } from "..";
+import type { ReactElement } from "react";
 import type { ViewStyle } from "react-native";
+
+/** Like the app (and `renderWithProviders`): sheets render through the provider's portal. */
+function render(ui: ReactElement) {
+  return renderScreen(ui, { wrapper: BottomSheetModalProvider });
+}
 
 // ---------------------------------------------------------------------------------------------
 // SearchField
@@ -294,17 +309,19 @@ describe("SelectSheet", () => {
     const search = screen.getByRole("search");
     expect(search).toHaveProp(SHEET_INPUT_PROP, true);
 
-    await user.type(search, "kho ha noi");
+    // Pasted, not typed: what is under test is the match on the whole query. Typing these 27
+    // characters one by one made this the slowest test of the file (one timer hop and four act()
+    // renders of the whole sheet per key), close enough to Jest's 5 s limit on a loaded machine to
+    // fail now and then. Key-by-key filtering is covered by "says so when the search matches nothing".
+    await user.paste(search, "kho ha noi");
     expect(screen.getByText("Kho Hà Nội")).toBeTruthy();
     expect(screen.queryByText("Kho Đà Nẵng")).toBeNull();
 
-    await user.clear(search);
-    await user.type(search, "DA NANG");
+    await user.paste(search, "DA NANG");
     expect(screen.getByText("Kho Đà Nẵng")).toBeTruthy();
     expect(screen.queryByText("Kho Hà Nội")).toBeNull();
 
-    await user.clear(search);
-    await user.type(search, "giai phong");
+    await user.paste(search, "giai phong");
     expect(screen.getByText("Kho Hà Nội")).toBeTruthy();
   });
 
@@ -607,6 +624,20 @@ describe("ConfirmSheet", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("Phiếu đã có hàng nhập kho");
   });
 
+  it("confirm sheet has a new error spoken (iOS has no live regions)", async () => {
+    const announce = jest
+      .spyOn(AccessibilityInfo, "announceForAccessibility")
+      .mockImplementation(() => undefined);
+    const { rerender } = await render(<ConfirmHarness title="Xoá" />);
+    announce.mockClear();
+
+    await rerender(<ConfirmHarness title="Xoá" error="Phiếu đã có hàng nhập kho" />);
+
+    expect(announce).toHaveBeenCalledTimes(1);
+    expect(announce).toHaveBeenCalledWith("Phiếu đã có hàng nhập kho");
+    announce.mockRestore();
+  });
+
   it("confirm sheet is locked while loading", async () => {
     const onConfirm = jest.fn();
     const user = userEvent.setup();
@@ -667,16 +698,49 @@ describe("ConfirmSheet", () => {
     expect(onConfirm).toHaveBeenCalledTimes(2);
   });
 
-  it("confirm sheet lets the user retry when it stays open after a confirm", async () => {
+  it("confirm sheet retries only after loading clears", async () => {
     const onConfirm = jest.fn();
     const user = userEvent.setup();
+    const props = { closeOnConfirm: false, onConfirm };
+    const { rerender } = await render(<ConfirmHarness {...props} />);
+    const confirm = () => screen.getByRole("button", { name: MOBILE_LABELS.confirm });
+
+    // The request has not shown as loading yet: a second tap does not confirm again.
+    await user.press(confirm());
+    await user.press(confirm());
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+
+    await rerender(<ConfirmHarness {...props} loading />);
+    await rerender(<ConfirmHarness {...props} loading={false} />);
+    await user.press(confirm());
+    expect(onConfirm).toHaveBeenCalledTimes(2);
+  });
+
+  it("confirm sheet takes a confirm again once a new error shows", async () => {
+    const onConfirm = jest.fn();
+    const user = userEvent.setup();
+    const props = { closeOnConfirm: false, onConfirm };
+    const { rerender } = await render(<ConfirmHarness {...props} />);
+    await user.press(screen.getByRole("button", { name: MOBILE_LABELS.confirm }));
+
+    await rerender(<ConfirmHarness {...props} error="Phiếu đã có hàng nhập kho" />);
+    await user.press(screen.getByRole("button", { name: MOBILE_LABELS.confirm }));
+
+    expect(onConfirm).toHaveBeenCalledTimes(2);
+  });
+
+  it("two taps in one frame confirm once, before the caller can show loading", async () => {
+    const onConfirm = jest.fn();
     await render(<ConfirmHarness closeOnConfirm={false} onConfirm={onConfirm} />);
     const confirm = screen.getByRole("button", { name: MOBILE_LABELS.confirm });
 
-    await user.press(confirm);
-    await user.press(confirm);
+    // Both taps land before React renders again, so the button cannot have disabled itself.
+    await act(async () => {
+      await fireEvent.press(confirm);
+      await fireEvent.press(confirm);
+    });
 
-    expect(onConfirm).toHaveBeenCalledTimes(2);
+    expect(onConfirm).toHaveBeenCalledTimes(1);
   });
 
   it("confirm sheet puts its content in the scrollable body", async () => {
@@ -703,6 +767,80 @@ describe("ConfirmSheet", () => {
     await user.type(reason, "hết hạn");
 
     expect(screen.getByText("7/200")).toBeTruthy();
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+// SelectField
+// ---------------------------------------------------------------------------------------------
+
+describe("SelectField", () => {
+  it("select field shows its label and value and reads as a 48px button with a value", async () => {
+    await render(
+      <SelectField label="Kho" valueText="Kho Hà Nội" placeholder="Chọn kho" onPress={jest.fn()} />,
+    );
+
+    expect(screen.getByText("Kho")).toBeTruthy();
+    expect(screen.getByText("Kho Hà Nội")).toBeTruthy();
+    const field = screen.getByRole("button", { name: "Kho" });
+    expect(field).toHaveAccessibilityValue({ text: "Kho Hà Nội" });
+    expect(field).toHaveStyle({ minHeight: 48 });
+  });
+
+  it("select field shows the placeholder, dimmed, while nothing is chosen", async () => {
+    await render(<SelectField label="Kho" placeholder="Chọn kho" onPress={jest.fn()} />);
+
+    expect(screen.getByRole("button", { name: "Kho" })).toHaveAccessibilityValue({
+      text: "Chọn kho",
+    });
+    expect(screen.getByText("Chọn kho").props.className).toContain("text-ink-tertiary");
+  });
+
+  it("select field opens on press, but not while disabled or loading", async () => {
+    const onPress = jest.fn();
+    const user = userEvent.setup();
+    const field = (state: { disabled?: boolean; loading?: boolean }) => (
+      <SelectField label="Kho" placeholder="Chọn kho" onPress={onPress} {...state} />
+    );
+    const { rerender } = await render(field({}));
+    await user.press(screen.getByRole("button", { name: "Kho" }));
+    expect(onPress).toHaveBeenCalledTimes(1);
+
+    await rerender(field({ disabled: true }));
+    expect(screen.getByRole("button", { name: "Kho" })).toBeDisabled();
+    await user.press(screen.getByRole("button", { name: "Kho" }));
+
+    await rerender(field({ loading: true }));
+    expect(screen.getByRole("button", { name: "Kho" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Kho" })).toBeBusy();
+    expect(screen.queryByText("Chọn kho")).toBeNull();
+    await user.press(screen.getByRole("button", { name: "Kho" }));
+
+    expect(onPress).toHaveBeenCalledTimes(1);
+  });
+
+  it("select field reads its hint with the field, and an error in its place", async () => {
+    const field = (error?: string) => (
+      <SelectField
+        label="Kho"
+        placeholder="Chọn kho"
+        hint="Điền sẵn bộ lọc kho"
+        error={error}
+        onPress={jest.fn()}
+      />
+    );
+    const { rerender } = await render(field());
+    expect(screen.getByText("Điền sẵn bộ lọc kho")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Kho" })).toHaveProp(
+      "accessibilityHint",
+      "Điền sẵn bộ lọc kho",
+    );
+
+    await rerender(field("Bắt buộc chọn kho"));
+    expect(screen.getByRole("alert")).toHaveTextContent("Bắt buộc chọn kho");
+    const button = screen.getByRole("button", { name: "Kho" });
+    expect(button).toHaveProp("accessibilityHint", "Bắt buộc chọn kho");
+    expect(button.props.className).toContain("border-danger");
   });
 });
 
@@ -870,6 +1008,37 @@ describe("DateField", () => {
 // ---------------------------------------------------------------------------------------------
 
 describe("QuantityStepper", () => {
+  it("disabled quantity stepper locks both buttons and the field", async () => {
+    const onChange = jest.fn();
+    const user = userEvent.setup();
+    await render(<QuantityStepper label="Số lượng" value={5} disabled onChange={onChange} />);
+
+    const decrease = screen.getByRole("button", { name: MOBILE_LABELS.decrease("Số lượng") });
+    const increase = screen.getByRole("button", { name: MOBILE_LABELS.increase("Số lượng") });
+    expect(decrease).toBeDisabled();
+    expect(increase).toBeDisabled();
+    expect(screen.getByLabelText("Số lượng")).toHaveProp("editable", false);
+    await user.press(increase);
+    await user.press(decrease);
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("quantity stepper shows its error under it, in the field hint and border", async () => {
+    await render(
+      <QuantityStepper
+        label="Số lượng"
+        value={12}
+        error="Vượt tồn khả dụng"
+        onChange={jest.fn()}
+      />,
+    );
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Vượt tồn khả dụng");
+    const field = screen.getByLabelText("Số lượng");
+    expect(field).toHaveProp("accessibilityHint", "Vượt tồn khả dụng");
+    expect(field.props.className).toContain("border-danger");
+  });
+
   it("quantity stepper clamps to max and min", async () => {
     const onChange = jest.fn();
     const user = userEvent.setup();

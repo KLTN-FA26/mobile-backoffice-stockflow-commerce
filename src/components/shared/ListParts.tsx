@@ -2,6 +2,7 @@ import { ActivityIndicator, RefreshControl, ScrollView, View } from "react-nativ
 
 import { MOBILE_LABELS } from "@/constants/mobile";
 
+import { useAnnounce } from "@/hooks/use-announce";
 import { useThemeColors } from "@/hooks/use-theme-colors";
 
 import { Button, Text } from "@/components/ui";
@@ -67,6 +68,9 @@ export type RefetchFailedNoticeProps = {
  * failed at the bottom.
  */
 export function RefetchFailedNotice({ busy, onRetry }: RefetchFailedNoticeProps) {
+  // Android reads the live region below by itself; iOS has none.
+  useAnnounce(MOBILE_LABELS.refetchFailed);
+
   return (
     <View
       accessibilityLiveRegion="polite"

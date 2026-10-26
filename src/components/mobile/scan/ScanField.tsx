@@ -1,19 +1,20 @@
 import { ScanLine, X } from "lucide-react-native";
 import { useState } from "react";
-import { ActivityIndicator, Pressable, View } from "react-native";
+import { ActivityIndicator, View } from "react-native";
 
-import { MOBILE_LABELS, UI_LIMITS } from "@/constants/mobile";
+import { MOBILE_LABELS } from "@/constants/mobile";
 
 import { useThemeColors } from "@/hooks/use-theme-colors";
 import { CONTROL_HEIGHT } from "@/lib/tokens";
 import { cn } from "@/lib/utils";
 
-import { FieldFrame, TextField } from "@/components/ui";
+import { FieldFrame, IconButton, TextField } from "@/components/ui";
 
 import { ScanCameraButton } from "./ScanCameraButton";
 import { ScanFeedbackBanner } from "./ScanFeedbackBanner";
 import { useScanCamera } from "./use-scan-camera";
 import { useScanInput } from "./use-scan-input";
+import { useWarnInSheet } from "./use-warn-in-sheet";
 
 import type { ScanFeedback } from "./scan-bus";
 import type { ScanMode } from "./use-scan-camera";
@@ -67,6 +68,7 @@ export function ScanField({
 }: ScanFieldProps) {
   const colors = useThemeColors();
   const [focused, setFocused] = useState(false);
+  useWarnInSheet();
 
   // Typed and camera codes alike: trim, normalize, skip empty.
   const deliver = (raw: string): boolean => {
@@ -119,7 +121,6 @@ export function ScanField({
             spellCheck={false}
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
-            maxFontSizeMultiplier={UI_LIMITS.maxFontSizeMultiplier}
             className="h-full min-w-0 flex-1 px-[8px] font-mono text-[15px] text-ink-primary"
           />
           {pending ? (
@@ -131,14 +132,12 @@ export function ScanField({
             />
           ) : null}
           {value.length > 0 && !disabled ? (
-            <Pressable
-              accessibilityRole="button"
+            <IconButton
+              icon={X}
               accessibilityLabel={scan.clear}
               onPress={clear}
-              className="h-full w-[44px] items-center justify-center"
-            >
-              <X size={ICON_SIZE} color={colors["ink-secondary"]} />
-            </Pressable>
+              iconColor="ink-secondary"
+            />
           ) : null}
         </View>
         <ScanCameraButton onPress={openCamera} disabled={disabled} />

@@ -82,6 +82,13 @@ function validateManifest(data) {
     if (entry.note !== undefined && typeof entry.note !== "string") {
       fail(`${where}.note`, "phải là chuỗi");
     }
+    // An adapted target is free to differ from the web file; the note is where the difference is said.
+    if (entry.mode === "adapted" && !isText(entry.note?.trim())) {
+      fail(
+        `${where}.note`,
+        `phải có ghi chú không rỗng cho mục adapted (${entry.target}): nói rõ mobile khác web ở đâu`,
+      );
+    }
     for (const key of ["source", "target"]) {
       if (toRepoPath(entry[key]) !== entry[key]) {
         fail(`${where}.${key}`, `không phải đường dẫn chuẩn trong repo: ${entry[key]}`);
@@ -296,6 +303,9 @@ export function parseAddArgs(argv) {
   }
   if (values.target !== undefined && positionals.length > 1) {
     throw new SyncError("--target chỉ dùng được với một source");
+  }
+  if (values.mode === "adapted" && !values.note?.trim()) {
+    throw new SyncError('--mode adapted cần --note "<text>": ghi mobile khác web ở đâu');
   }
   return {
     sources: positionals.map(toRepoPath),

@@ -12,7 +12,7 @@ Audit `${1:-app/ và src/}` xem có vi phạm design system mobile không. **Rea
 
 **0. Chạy trước:** `node scripts/check-style-bans.mjs` (cùng bộ kiểm với `pnpm run lint`) — mọi dòng nó báo là vi phạm chắc chắn.
 
-**1. Hex trần** — hex chỉ được ở `src/lib/tokens.ts` (và `src/constants/**` copy từ web): grep `#[0-9a-fA-F]{3,8}` và `rgb\(|rgba\(|hsl\(` trong `app/`, `src/` (trừ file token).
+**1. Hex trần** — hex chỉ được ở `src/lib/tokens.ts` (và các file `verbatim` copy từ web trong `src/constants/`; `src/constants/mobile/**` cũng bị kiểm): grep `#[0-9a-fA-F]{3,8}` và `rgb\(|rgba\(|hsl\(` trong `app/`, `src/` (trừ file token).
 
 **2. Gradient** — `gradient`, `bg-linear-`, `bg-radial-`, `LinearGradient`, `expo-linear-gradient`.
 
@@ -28,15 +28,15 @@ icon-button thiếu `accessibilityLabel`; control thiếu `accessibilityRole`.
 **6. `BottomActionBar`** — màn Chi tiết / Form / Trạm có hành động chính nằm ngoài `BottomActionBar`; hơn 1 nút chính; hành động phụ không gom vào sheet "Thao tác khác";
 nút bị khoá mà **không** hiện lý do inline ngay dưới nút; nút gate quyền thiếu comment `// Backend phải re-check`.
 
-**7. Primitives** — trong `src/features/**` và `app/**`: import `Text`, `Pressable`, `TouchableOpacity`, `Button`, `TextInput` từ `react-native` (phải dùng `@/components/ui`);
-`FlatList`/`ScrollView + map` cho danh sách (phải `FlashList`); tự dựng `TextInput` nhập mã thay vì `ScanField`; viết lại component đã có trong `shared-components.md`;
-bất kỳ edit nào vào `src/components/ui/**`.
+**7. Primitives** — trong `src/features/**` và `app/**`: import `Text`, `Pressable`, `TouchableOpacity`, `TouchableHighlight`, `TouchableWithoutFeedback`, `Button`, `TextInput` từ `react-native` hoặc `Pressable`/`TouchableOpacity`/`TextInput` từ `react-native-gesture-handler` (phải dùng `@/components/ui`);
+`FlatList`/`ScrollView + map` cho danh sách (phải `FlashList`); tự dựng `TextInput` nhập mã thay vì `ScanField`; viết lại component đã có trong `shared-components.md` (tự dựng `Pressable` + icon thay vì `IconButton`, khung thẻ thay vì `Card`, ô chọn thay vì `SelectField`);
+edit vào file `src/components/ui/**` đã có trên `main` (primitive mới thêm trên nhánh thì được).
 
 **8. Chuỗi hardcode** — chữ hiển thị gõ thẳng trong `.tsx` (JSX text, `title=`, `label=`, `placeholder=`, `accessibilityLabel=`, `toast(...)`) thay vì lấy từ
 `src/constants/**` hoặc `src/constants/mobile/**`; route/status/query key viết tay.
 
 **9. Hình khối & chuyển động** — `borderRadius` ngoài {4 (badge), 8 (card/nút/ô nhập), full}; thiếu cặp `shadow*` (iOS) + `elevation: 1` (Android) ở khối card, hoặc bóng nặng hơn `--sh-sm`;
-animation `duration` ngoài 120–180ms; không tôn trọng Reduce Motion; cỡ chữ ngoài thang (body 15 · meta 13 · nhỏ nhất 12 · header 17 · số lớn 22–24);
+animation `duration` ngoài 120–180ms (dùng `MOTION_MS`); không tôn trọng Reduce Motion; cỡ chữ ngoài thang (body 15 · meta 13 · nhỏ nhất 12 · header 17 · số lớn 22–24);
 chữ trong thẻ thiếu `maxFontSizeMultiplier` ≈ 1.3.
 
 **10. Số liệu thiếu tabular** — cột/dòng tiền, số lượng, ngày canh phải mà không có `fontVariant: ["tabular-nums"]`; mã định danh (SKU, số phiếu, mã kiện) không dùng font mono.

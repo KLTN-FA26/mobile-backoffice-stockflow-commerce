@@ -44,7 +44,9 @@ Nguồn: spec §3.3 (bảng ranh giới), §2.4, §3.1, §3.2. Thay `state-persi
 ## kv-store — `usePrefs`
 
 Cùng chữ ký với `usePageConfig` của web: `{ config, updateConfig }`, **merge với default** để schema đổi không làm vỡ màn. Chỉ ghi khi gọi setter
-(không ghi lúc mount); JSON hỏng → default. **Đừng tự viết lại** logic đọc/ghi.
+(không ghi lúc mount); JSON hỏng → default. **Đừng tự viết lại** logic đọc/ghi. `merge` nhận `(stored: Record<string, unknown>, fallback)` — bản lưu có thể thiếu trường,
+dư trường cũ hoặc sai kiểu (bản app cũ, bản ghi hỏng), nên `merge` phải **kiểm từng trường** (zod hoặc kiểm kiểu) và giữ giá trị của `fallback` khi trường không hợp lệ;
+không ép kiểu `as Partial<T>`.
 
 ## zustand — `use-app-store`
 
@@ -56,6 +58,9 @@ Theme (Sáng/Tối/Hệ thống), tắt tiếng, rung — **theo máy**, ngườ
   dùng chung, người đăng nhập sau không được thừa hưởng kho của người trước (và có thể không có quyền với kho đó).
 - Màn hình **chỉ đọc qua `useDefaultWarehouseId()`** (`src/hooks/use-default-warehouse-id.ts`, `string | null`; `null` khi chưa đăng nhập hoặc chưa chọn). Không đọc
   `defaultWarehouseByUser` trực tiếp, không tự lấy `userId` rồi tra bảng. Id có thể trỏ tới kho đã ngừng hoạt động — màn có danh sách kho đối chiếu với danh sách đó.
+- **Dữ liệu persist được kiểm khi đọc** (R57): `use-app-store` có `merge` dùng schema zod, từng trường chỉ giữ khi hợp lệ, ngược lại lấy mặc định (theme chỉ nhận
+  `system`/`light`/`dark`; `defaultWarehouseByUser` phải là `Record<string, string>`; khoá lạ bị bỏ; JSON hỏng → mặc định, không ném lỗi). Thêm trường persist → thêm vào
+  schema đó và một ca "bản ghi hỏng" trong `use-app-store.test.ts`.
 - Đổi hình dạng state persist → tăng `version` và viết `migrate` (hiện `version: 1`; bản 0 có `defaultWarehouseId` dùng chung toàn máy, bị bỏ vì không biết của ai).
 
 ## `session:*` — dữ liệu phiên tạm

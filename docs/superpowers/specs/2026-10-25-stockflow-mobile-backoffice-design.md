@@ -209,6 +209,7 @@ Cấu hình môi trường: `app.config.ts` + EAS profile `development` / `previ
 - `focusManager` ← AppState; `onlineManager` ← NetInfo. Không persist cache query.
 - Polling 15s ở chuyến xe/biên bản khi `LOADING` (`SHIPPING_LIMITS.loadPollMs`) chỉ chạy khi màn đang focus và app foreground.
 - Quyền: copy `me-permissions.ts`, `Can`, `useCan`, `usePermissionChecker`; viết lại `PermissionBoundary` (RN). Mã quyền dạng `resource:ACTION`, không gắn theo tên vai trò. Đang tải/lỗi = không có quyền (ẩn nút, không nháy).
+  **Khác web (R55, nâng cấp N8):** chỉ khi **chưa có** quyền nào; đã có quyền thì refetch lỗi (401 của phiên hết hạn, mạng, 503) giữ quyền đã biết — màn có gate và bản nháp không bị gỡ dưới sheet đăng nhập lại (như thanh điều hướng, R39). `Can` vì vậy thành `adapted`; web nên sửa theo rồi trả về `verbatim`.
 - `NAV_GROUPS` mobile (`src/components/mobile/nav-config.ts` — không ở `src/constants/mobile` vì cần kiểu `PermissionCode` của `@/lib/auth`, mà `src/constants` không import gì trong `src/`) giữ đúng item + mã quyền của `BackofficeShell.tsx` web cho 3 nhóm, bỏ Load plan và Loại xe; `anyPermission` cho Tổng quan tồn kho. Tab không còn item thấy được → ẩn tab.
 
 **Ranh giới state (thay `state-persistence.md`)**

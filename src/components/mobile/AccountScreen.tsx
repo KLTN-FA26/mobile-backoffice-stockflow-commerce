@@ -23,9 +23,11 @@ export function AccountScreen() {
   return (
     <View className="flex-1 bg-bg-base">
       <ScreenHeader title={MOBILE_LABELS.account.title} />
-      {/* "handled": with the scan check focused, the clear and camera buttons work on the first tap. */}
+      {/* "handled": with the scan check focused, the clear and camera buttons work on the first tap.
+          The keyboard: iOS insets the scroll view by it; Android resizes the window (as on login). */}
       <ScrollView
         keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets
         contentContainerClassName="gap-[16px] p-[16px]"
       >
         <IdentityCard />

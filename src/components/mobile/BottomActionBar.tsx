@@ -4,15 +4,26 @@ import { useContext } from "react";
 import { View } from "react-native";
 import { SafeAreaInsetsContext } from "react-native-safe-area-context";
 
+import { useSubmitLatch } from "@/hooks/use-submit-latch";
 import { cn } from "@/lib/utils";
 
 import { Button, Text } from "@/components/ui";
 
 import type { ButtonProps } from "@/components/ui";
 
+export type BottomAction = ButtonProps & {
+  /**
+   * For an action that starts a request shown by `loading` (TanStack `isPending`): taps after the
+   * first are ignored until `loading` has been true and is false again (`useSubmitLatch`), not only
+   * once the spinner shows. Leave it off for an action that only navigates or opens a sheet: with
+   * no request to wait for, the latch would never let go.
+   */
+  latch?: boolean;
+};
+
 export type BottomActionBarProps = {
   /** The one main action, full width at the bottom (thumb zone). */
-  primary?: ButtonProps;
+  primary?: BottomAction;
   /** Secondary or destructive actions, in a row above the main one. */
   secondary?: ButtonProps[];
   /**
@@ -45,6 +56,7 @@ export function BottomActionBar({
   const tabBarHeight = useContext(BottomTabBarHeightContext) ?? 0;
   const bottomInset = tabBarHeight > 0 ? 0 : (insets?.bottom ?? 0);
   const hasRow = secondary.length > 0 || more !== undefined;
+  const runPrimary = useSubmitLatch({ loading: primary?.loading });
 
   return (
     <View
@@ -68,7 +80,11 @@ export function BottomActionBar({
         </View>
       ) : null}
       {primary === undefined ? null : (
-        <Button {...primary} accessibilityHint={disabledReason ?? primary.accessibilityHint} />
+        <Button
+          {...primary}
+          onPress={primary.latch ? () => runPrimary(primary.onPress) : primary.onPress}
+          accessibilityHint={disabledReason ?? primary.accessibilityHint}
+        />
       )}
       {disabledReason === undefined ? null : (
         <Text variant="meta" tone="secondary" accessibilityLiveRegion="polite">

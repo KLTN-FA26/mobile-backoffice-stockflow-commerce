@@ -18,6 +18,8 @@ export type LoadErrorStateProps = {
   /** `ApiError.traceId`, shown so support can find the request. */
   traceId?: string;
   onRetry?: () => void;
+  /** The retry is running: the button spins and takes no second press. */
+  retrying?: boolean;
 };
 
 type Copy = { title: string; description?: string };
@@ -62,6 +64,7 @@ export function LoadErrorState({
   description,
   traceId,
   onRetry,
+  retrying = false,
 }: LoadErrorStateProps) {
   const copy = DEFAULT_COPY[kind];
 
@@ -72,7 +75,12 @@ export function LoadErrorState({
       description={description ?? copy.description}
     >
       {onRetry !== undefined && RETRYABLE.has(kind) ? (
-        <Button variant="secondary" label={MOBILE_LABELS.retry} onPress={onRetry} />
+        <Button
+          variant="secondary"
+          label={MOBILE_LABELS.retry}
+          loading={retrying}
+          onPress={onRetry}
+        />
       ) : null}
       {traceId === undefined || traceId === "" ? null : (
         <Text variant="small" tone="tertiary" mono selectable className="text-center">

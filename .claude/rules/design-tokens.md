@@ -19,11 +19,17 @@ Token khai báo **một lần** trong `src/lib/tokens.ts` (hex, light + dark). `
 NativeWind; `tailwind.config.js` map mỗi token → `rgb(var(--token) / <alpha-value>)`; `global.css` chỉ chứa các directive `@tailwind`.
 Component dùng class/biến token, đổi scheme **không** bằng cách rẽ nhánh màu trong component. Icon/StatusBar cần hex → `useThemeColors()`.
 
+Bảng màu của Tailwind là `theme.colors` (không phải `theme.extend.colors`): **chỉ** các token cộng `transparent` và `current`. Class của bảng màu mặc định
+(`bg-white`, `text-black`, `bg-red-500`, `border-gray-200`…) **không sinh ra gì** — dùng token. `border` trần lấy màu `border-default`.
+`tailwind.config.js` và `app.config.ts` đều đọc `src/lib/tokens.ts` bằng jiti (Node thường không require được file `.ts` có alias), nên `tokens.ts` chỉ được import type.
+Có ca kiểm ở `scripts/__tests__/tailwind-config.test.mjs`.
+
 ## Cấm tuyệt đối
 
 `pnpm run lint` chạy `scripts/check-style-bans.mjs` trên `app/` + `src/` và fail khi gặp:
 
-- **Hex trần** ngoài `src/lib/tokens.ts` (`src/constants/**` copy từ web được miễn).
+- **Hex trần** ngoài `src/lib/tokens.ts`. Chỉ các file `verbatim` của `port-manifest.json` nằm trong `src/constants/` được miễn (không sửa được); mọi file khác
+  trong `src/constants/` — kể cả `src/constants/mobile/**` — bị kiểm như file thường.
 - **Gradient** (`gradient`, `bg-linear-*`, `expo-linear-gradient`…) — nền dùng màu phẳng từ token.
 - **Hồng / magenta / fuchsia** ở bất kỳ đâu.
 - **Import `@/lib/mock-data`.**
@@ -51,17 +57,17 @@ Các điều dưới đây **lint không bắt** — `/design-check` và `design
 
 ## Hình khối, chữ, chuyển động
 
-| Hạng mục  | Giá trị                                                                                                                                      |
-| --------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| Radius    | `sm` 4 (badge) · `md` 8 (card, nút, **ô nhập trên mobile** — N4) · `full`                                                                    |
-| Bóng      | `--sh-sm` → RN `shadow*` (iOS) + `elevation: 1` (Android), chỉ cho khối dạng card                                                            |
-| Spacing   | thang 4px: 2/4/8/12/16/24/32/48; lề màn 16                                                                                                   |
-| Control   | cao 44–52px (Button `sm` 40 · `md` 44 · `lg` 52; control thấp hơn 44 phải bù `hitSlop`); vùng chạm ≥ 44pt                                    |
-| Font      | Inter (UI) · Inter Tight (số lớn) · JetBrains Mono (mã, số cần canh cột) qua `@expo-google-fonts/*`; số dùng `fontVariant: ["tabular-nums"]` |
-| Cỡ chữ    | body 15 · meta 13 · nhỏ nhất 12 · tiêu đề header 17 · số lớn 22–24; `maxFontSizeMultiplier` ≈ 1.3 cho chữ trong thẻ                          |
-| Motion    | 120–180ms, `react-native-reanimated`, tôn trọng Reduce Motion; tránh hiệu ứng trang trí                                                      |
-| Dark mode | theo hệ thống mặc định; chọn Sáng / Tối / Hệ thống ở tab Tài khoản (NativeWind `colorScheme`); **cả hai theme đều phải đúng**                |
-| A11y      | `accessibilityLabel` cho mọi icon-button, `accessibilityRole` đúng; mã/SKU/số lượng/tiền dùng mono hoặc tabular-nums, canh phải trong thẻ    |
+| Hạng mục  | Giá trị                                                                                                                                                  |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Radius    | `sm` 4 (badge) · `md` 8 (card, nút, **ô nhập trên mobile** — N4) · `full`                                                                                |
+| Bóng      | `--sh-sm` → RN `shadow*` (iOS) + `elevation: 1` (Android), chỉ cho khối dạng card                                                                        |
+| Spacing   | thang 4px: 2/4/8/12/16/24/32/48; lề màn 16                                                                                                               |
+| Control   | cao 44–52px (Button `sm` 40 · `md` 44 · `lg` 52; control thấp hơn 44 phải bù `hitSlop`); vùng chạm ≥ 44pt                                                |
+| Font      | Inter (UI) · Inter Tight (số lớn) · JetBrains Mono (mã, số cần canh cột) qua `@expo-google-fonts/*`; số dùng `fontVariant: ["tabular-nums"]`             |
+| Cỡ chữ    | body 15 · meta 13 · nhỏ nhất 12 · tiêu đề header 17 · số lớn 22–24; `maxFontSizeMultiplier` ≈ 1.3 cho chữ trong thẻ                                      |
+| Motion    | 120–180ms (`MOTION_MS` ở `src/lib/tokens.ts`: `fast` 120 · `standard` 180), `react-native-reanimated`, tôn trọng Reduce Motion; tránh hiệu ứng trang trí |
+| Dark mode | theo hệ thống mặc định; chọn Sáng / Tối / Hệ thống ở tab Tài khoản (NativeWind `colorScheme`); **cả hai theme đều phải đúng**                            |
+| A11y      | `accessibilityLabel` cho mọi icon-button, `accessibilityRole` đúng; mã/SKU/số lượng/tiền dùng mono hoặc tabular-nums, canh phải trong thẻ                |
 
 Không all-caps cho nhãn thường. Icon: `lucide-react-native` (14–16 ở mục hub).
 
