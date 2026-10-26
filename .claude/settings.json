@@ -39,7 +39,7 @@
           {
             "type": "command",
             "command": "node",
-            "args": [".claude/hooks/guard-protected-files.mjs"],
+            "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/guard-protected-files.mjs"],
             "timeout": 10,
             "statusMessage": "Kiểm tra file được bảo vệ"
           }
@@ -51,7 +51,7 @@
           {
             "type": "command",
             "command": "node",
-            "args": [".claude/hooks/guard-package-manager.mjs"],
+            "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/guard-package-manager.mjs"],
             "timeout": 10,
             "statusMessage": "Kiểm tra package manager"
           }
@@ -65,7 +65,7 @@
           {
             "type": "command",
             "command": "node",
-            "args": [".claude/hooks/format-changed-file.mjs"],
+            "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/format-changed-file.mjs"],
             "timeout": 45,
             "statusMessage": "Format file vừa sửa"
           }
@@ -78,7 +78,7 @@
           {
             "type": "command",
             "command": "node",
-            "args": [".claude/hooks/remind-validate.mjs"],
+            "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/remind-validate.mjs"],
             "timeout": 20,
             "statusMessage": "Kiểm tra quy trình verify (app/ + src/)"
           }

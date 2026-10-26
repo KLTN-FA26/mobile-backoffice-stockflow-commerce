@@ -6,7 +6,7 @@ import path from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 
-import { lintFeedback } from "../format-changed-file.mjs";
+import { formatTarget, lintFeedback } from "../format-changed-file.mjs";
 
 const HOOK = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -47,12 +47,52 @@ describe("lintFeedback", () => {
   });
 });
 
+describe("formatTarget", () => {
+  const project = path.join(os.tmpdir(), "sf-fmt-target");
+  const file = path.join(project, "src", "a.ts");
+
+  it("resolves the file against CLAUDE_PROJECT_DIR when the session cwd is a subdirectory", () => {
+    const input = { cwd: path.join(project, "docs"), tool_input: { file_path: file } };
+    const target = formatTarget(input, { CLAUDE_PROJECT_DIR: project });
+    assert.deepEqual(target, {
+      projectDir: project,
+      filePath: file,
+      relative: "src/a.ts",
+      lint: true,
+    });
+  });
+
+  it("falls back to the input cwd without CLAUDE_PROJECT_DIR", () => {
+    const target = formatTarget({ cwd: project, tool_input: { file_path: file } }, {});
+    assert.equal(target?.relative, "src/a.ts");
+  });
+
+  it("skips files outside the project, generated folders and non-formattable files", () => {
+    const env = { CLAUDE_PROJECT_DIR: project };
+    for (const filePath of [
+      path.join(os.tmpdir(), "elsewhere", "a.ts"),
+      path.join(project, "node_modules", "x", "a.ts"),
+      path.join(project, "pnpm-lock.yaml"),
+      path.join(project, "assets", "icon.png"),
+    ]) {
+      assert.equal(formatTarget({ tool_input: { file_path: filePath } }, env), null, filePath);
+    }
+    assert.equal(formatTarget({ tool_input: {} }, env), null);
+    assert.equal(formatTarget(null, env), null);
+  });
+});
+
 describe("format-changed-file CLI", () => {
   function run(input, cwd) {
+    // Without the session's CLAUDE_PROJECT_DIR, which would point the hook at the real repo.
+    const env = Object.fromEntries(
+      Object.entries(process.env).filter(([key]) => key !== "CLAUDE_PROJECT_DIR"),
+    );
     return spawnSync(process.execPath, [HOOK], {
       input: typeof input === "string" ? input : JSON.stringify(input),
       encoding: "utf8",
       cwd,
+      env,
     });
   }
 

@@ -27,10 +27,15 @@ const GIT_FIXTURE_CONFIG = [
   "user.email=test@example.com",
 ].flatMap((setting) => ["-c", setting]);
 
-/** The environment without inherited GIT_* variables (GIT_DIR, GIT_INDEX_FILE…). */
+/**
+ * The environment without inherited GIT_* variables (GIT_DIR, GIT_INDEX_FILE…) or the session's
+ * CLAUDE_PROJECT_DIR (it would point the hook at the real repo instead of the fixture).
+ */
 function cleanEnv(extra = {}) {
   const env = Object.fromEntries(
-    Object.entries(process.env).filter(([key]) => !key.startsWith("GIT_")),
+    Object.entries(process.env).filter(
+      ([key]) => !key.startsWith("GIT_") && key !== "CLAUDE_PROJECT_DIR",
+    ),
   );
   return { ...env, ...extra };
 }
@@ -266,6 +271,23 @@ describe("guard-protected-files CLI", () => {
     } finally {
       fs.rmSync(noGit, { recursive: true, force: true });
     }
+  });
+
+  it("still blocks when the session cwd is a subdirectory (root from CLAUDE_PROJECT_DIR)", () => {
+    const subdir = path.join(root, "src");
+    const input = JSON.stringify({
+      cwd: subdir,
+      tool_name: "Edit",
+      tool_input: { file_path: path.join(root, ...VERBATIM_TARGET.split("/")) },
+    });
+    const result = spawnSync(process.execPath, [HOOK], {
+      input,
+      encoding: "utf8",
+      cwd: subdir,
+      env: cleanEnv({ CLAUDE_PROJECT_DIR: root }),
+    });
+    assert.equal(result.status, 2);
+    assert.match(result.stderr, /sync:pull/);
   });
 
   it("exits 0 for an ordinary file", () => {

@@ -36,7 +36,7 @@ Chuẩn bị: BE chạy profile `dev`; `.env.local` chép từ `.env.example` v�
 
 ## 2. Chờ người dùng quyết (R53 — cấu hình quyền của Claude Code, không cho subagent tự sửa)
 
-- **Hook bảo vệ dùng đường dẫn tương đối** trong `.claude/settings.json` (`.claude/hooks/…mjs`): sau một lệnh `cd`, hook không tìm thấy script và **mặc định cho qua** (chặn verbatim, khoá `components/ui`, chặn sửa `.env`, chặn npm/yarn/bun đều tắt). Đề xuất: lệnh hook dùng `$CLAUDE_PROJECT_DIR`, và trong hook lấy gốc repo từ `CLAUDE_PROJECT_DIR ?? input.cwd`; thêm test chạy từ thư mục con.
+- ~~Hook bảo vệ dùng đường dẫn tương đối~~ — **đã sửa** (người dùng duyệt 2026-10-26): hook đăng ký dạng exec `"args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/…mjs"]`, gốc repo trong hook lấy từ `CLAUDE_PROJECT_DIR` → `cwd` của input → `process.cwd()` (`.claude/hooks/project-root.mjs`), có test chạy từ thư mục con. Còn để ngỏ: `"onFailure": "block"` (Claude Code ≥ 2.1.295) để guard chặn luôn khi chính hook lỗi.
 - **`guard-package-manager` còn lọt**: `npm uninstall/ci/update/audit fix`, `npm.cmd`, `cmd /c npm …`, tiền tố biến môi trường (`CI=1 npm ci`), `bun i/a`, here-string `<<<`. (`expo-doctor` vẫn bắt lockfile lạ khi validate.)
 - **Quyền trong `.claude/settings.json`**: luật chặn đọc `.env*` là tương đối theo thư mục hiện tại; các đường dẫn `D:/…` chỉ đúng trên máy này; `Bash(pnpm dlx:*)` tự duyệt mọi gói; `git branch:*`/`git stash:*` gồm cả `-D`/`drop`; matcher hook nên thêm `MultiEdit|NotebookEdit`.
 - **Khoá `components/ui` (R8)** chỉ so với `main` local.

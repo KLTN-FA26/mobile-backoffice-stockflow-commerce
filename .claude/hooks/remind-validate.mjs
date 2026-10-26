@@ -15,6 +15,8 @@
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 
+import { projectRoot } from "./project-root.mjs";
+
 const WATCHED_DIRS = ["app", "src"];
 const CODE_FILE = /\.(ts|tsx|css)$/i;
 
@@ -35,7 +37,7 @@ function main() {
   // Đã chặn một lần rồi — không chặn nữa, tránh vòng lặp.
   if (input?.stop_hook_active) process.exit(0);
 
-  const projectDir = input?.cwd ?? process.cwd();
+  const projectDir = projectRoot(input);
 
   // File code đang thay đổi (staged + unstaged + untracked, liệt kê từng file).
   const status = git(
@@ -59,7 +61,7 @@ function main() {
   process.stderr.write(
     `Có ${codeChanged.length} file code (app/, src/) đang thay đổi chưa commit:\n  ${preview}${more}\n\n` +
       `CLAUDE.md yêu cầu chạy \`pnpm run validate\` trước khi báo xong ` +
-      `(typecheck → lint → test → test:scripts → sync:check → doctor → export:check).\n\n` +
+      `(typecheck → lint → test:coverage → test:scripts → sync:check → doctor → export:check).\n\n` +
       `Nếu ĐÃ chạy và dán output thật trong lượt này → trả lời ngắn gọn là đã verify rồi và dừng lại.\n` +
       `Nếu CHƯA chạy → chạy ngay bây giờ, dán output thật, phân biệt lỗi mình gây ra với lỗi có sẵn trên baseline.\n` +
       `Nếu người dùng chỉ hỏi thông tin / chưa muốn verify → nói rõ là bỏ qua bước này theo yêu cầu của họ.\n`,

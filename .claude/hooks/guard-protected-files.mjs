@@ -18,6 +18,8 @@ import { readFileSync, realpathSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { projectRoot } from "./project-root.mjs";
+
 const MANIFEST_FILE = "port-manifest.json";
 const UI_PREFIX = "src/components/ui/";
 
@@ -140,7 +142,7 @@ function main() {
   const filePath = input?.tool_input?.file_path ?? input?.tool_input?.notebook_path;
   if (typeof filePath !== "string" || filePath.length === 0) process.exit(0);
 
-  const root = typeof input?.cwd === "string" && input.cwd.length > 0 ? input.cwd : process.cwd();
+  const root = projectRoot(input);
 
   let reason = null;
   try {

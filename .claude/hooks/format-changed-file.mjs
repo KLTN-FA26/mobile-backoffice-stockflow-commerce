@@ -18,6 +18,8 @@ import { readFileSync, realpathSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { projectRoot } from "./project-root.mjs";
+
 const FORMATTABLE = /\.(ts|tsx|css|mjs|json|md)$/i;
 const LINTABLE = /\.(ts|tsx)$/i;
 const SKIP = /(^|\/)(node_modules|\.expo|dist|coverage)\/|(^|\/)pnpm-lock\.yaml$/i;
@@ -60,6 +62,27 @@ export function lintFeedback(result, relative) {
   );
 }
 
+/**
+ * File cần format trong project, hoặc null khi bỏ qua (thiếu đường dẫn, ngoài project, thư mục sinh ra,
+ * đuôi không format). Đường dẫn tương đối tính từ gốc project, không từ cwd của phiên.
+ * @param {unknown} input JSON hook đọc từ stdin
+ * @param {Record<string, string | undefined>} [env]
+ * @returns {{ projectDir: string, filePath: string, relative: string, lint: boolean } | null}
+ */
+export function formatTarget(input, env = process.env) {
+  const filePath =
+    typeof input === "object" && input !== null ? input.tool_input?.file_path : undefined;
+  if (typeof filePath !== "string" || !FORMATTABLE.test(filePath)) return null;
+
+  const projectDir = projectRoot(input, env);
+  const relative = path.relative(projectDir, filePath);
+  if (relative.startsWith("..") || path.isAbsolute(relative)) return null;
+
+  const posix = relative.replaceAll("\\", "/");
+  if (SKIP.test(posix)) return null;
+  return { projectDir, filePath, relative: posix, lint: LINTABLE.test(filePath) };
+}
+
 /** Có đang là script được `node` chạy không (so realpath, qua junction/symlink vẫn đúng). */
 function isMainModule() {
   if (!process.argv[1]) return false;
@@ -78,20 +101,13 @@ function main() {
     process.exit(0);
   }
 
-  const filePath = input?.tool_input?.file_path;
-  const projectDir = input?.cwd ?? process.cwd();
-
-  if (typeof filePath !== "string") process.exit(0);
-  if (!FORMATTABLE.test(filePath)) process.exit(0);
-
-  // Chỉ xử lý file nằm trong project.
-  const relative = path.relative(projectDir, filePath);
-  if (relative.startsWith("..") || path.isAbsolute(relative)) process.exit(0);
-  if (SKIP.test(relative.replaceAll("\\", "/"))) process.exit(0);
+  const target = formatTarget(input);
+  if (target === null) process.exit(0);
+  const { projectDir, filePath, relative } = target;
 
   run(["prettier", "--write", filePath], projectDir);
 
-  if (LINTABLE.test(filePath)) {
+  if (target.lint) {
     const lint = run(["eslint", "--fix", "--max-warnings", "0", filePath], projectDir);
     const feedback = lintFeedback(lint, relative);
     if (feedback) {
