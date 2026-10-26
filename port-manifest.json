@@ -19,13 +19,13 @@
       "source": "src/constants/dashboard.ts",
       "target": "src/constants/dashboard.ts",
       "mode": "verbatim",
-      "sourceBlob": "46655fcb616a281940f68907a80ed376e3f915e7"
+      "sourceBlob": "fb7e6c817c84e8d2b3995cd1a36f672540b4d460"
     },
     {
       "source": "src/constants/index.ts",
       "target": "src/constants/index.ts",
       "mode": "verbatim",
-      "sourceBlob": "bbeae0a53921262dbae0ffb8583cb4a989798c07"
+      "sourceBlob": "7db353aed19a3a66779dadc12f5bb4137ff01029"
     },
     {
       "source": "src/constants/inventory.ts",
@@ -133,7 +133,7 @@
       "source": "src/constants/labels-taxonomy.ts",
       "target": "src/constants/labels-taxonomy.ts",
       "mode": "verbatim",
-      "sourceBlob": "1434047fbf8593781a38b6876b6c7e6431450e7f"
+      "sourceBlob": "db8e680a4cedecae8b9f862d154e1b708f88649a"
     },
     {
       "source": "src/constants/labels-transfer-pack.ts",
@@ -157,7 +157,7 @@
       "source": "src/constants/labels.ts",
       "target": "src/constants/labels.ts",
       "mode": "verbatim",
-      "sourceBlob": "37ef0a4679b2b7236b31f8e431daf8b396374e77"
+      "sourceBlob": "80f08610df24ec83d65b3259215b5575ce3cb03c"
     },
     {
       "source": "src/constants/load-planning.ts",
@@ -175,7 +175,7 @@
       "source": "src/constants/numbers.ts",
       "target": "src/constants/numbers.ts",
       "mode": "verbatim",
-      "sourceBlob": "16d241c5e793af297247c5402b224c47cc18e159"
+      "sourceBlob": "c32bc749dcbc54fb258d1f58a4b133d8f136ff59"
     },
     {
       "source": "src/constants/permissions.ts",
