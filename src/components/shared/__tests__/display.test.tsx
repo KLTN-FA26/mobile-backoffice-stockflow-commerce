@@ -11,6 +11,7 @@ import { ApiError } from "@/lib/api/error";
 import { classifyLoadError } from "@/lib/api/load-error";
 
 import {
+  CenteredSpinner,
   ComingSoon,
   EmptyStateNoData,
   EmptyStateNoResults,
@@ -446,6 +447,24 @@ describe("Segmented", () => {
     await user.press(screen.getByRole("tab", { name: "Đang mở" }));
 
     expect(onValueChange).not.toHaveBeenCalled();
+  });
+});
+
+describe("CenteredSpinner", () => {
+  it("shows and announces a message, keeping the spinner out of the screen reader's way", async () => {
+    await render(<CenteredSpinner message="Đang xác minh phiên đăng nhập" />);
+
+    expect(screen.getByText("Đang xác minh phiên đăng nhập")).toHaveProp(
+      "accessibilityLiveRegion",
+      "polite",
+    );
+    expect(screen.queryByLabelText(MOBILE_LABELS.loading)).toBeNull();
+  });
+
+  it("without a message, the spinner carries the label", async () => {
+    await render(<CenteredSpinner accessibilityLabel={MOBILE_LABELS.loading} />);
+
+    expect(screen.getByLabelText(MOBILE_LABELS.loading)).toBeOnTheScreen();
   });
 });
 

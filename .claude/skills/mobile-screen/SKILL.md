@@ -38,7 +38,7 @@ thêm loại.
 
 ### Hub
 
-- [ ] `HubMenu` đọc `NAV_GROUPS`: icon 14–16, nhãn Việt, tooltip tiếng Anh dạng dòng phụ; mục ẩn theo quyền (kể cả `anyPermission`); đang tải/lỗi quyền → ẩn.
+- [ ] `HubMenu` đọc `NAV_GROUPS` (`src/components/mobile/nav-config.ts`) qua `useNavVisibility`: icon 14–16, nhãn Việt, tooltip tiếng Anh dạng dòng phụ; mục ẩn theo quyền (kể cả `anyPermission`); đang tải quyền → skeleton, lỗi tải lần đầu → `LoadErrorState kind="permissions"` + "Thử lại" (không ẩn tab khi chưa biết quyền); refetch nền lỗi → giữ quyền đã biết.
 - [ ] Mục ComingSoon gắn nhãn "Đang phát triển" và dẫn tới màn `ComingSoon`.
 - [ ] Tab không còn mục nào thấy được → ẩn tab.
 

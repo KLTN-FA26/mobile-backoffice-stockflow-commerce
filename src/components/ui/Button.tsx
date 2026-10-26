@@ -22,6 +22,8 @@ export type ButtonProps = {
   loading?: boolean;
   disabled?: boolean;
   accessibilityLabel?: string;
+  /** Read after the label, e.g. why the button is disabled (there is no hover on a phone: N7). */
+  accessibilityHint?: string;
   className?: string;
 };
 
@@ -63,6 +65,7 @@ export function Button({
   loading = false,
   disabled = false,
   accessibilityLabel,
+  accessibilityHint,
   className,
 }: ButtonProps) {
   const colors = useThemeColors();
@@ -76,6 +79,7 @@ export function Button({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}
+      accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled: inactive, busy: loading }}
       disabled={inactive}
       hitSlop={slop > 0 ? { top: slop, bottom: slop } : undefined}

@@ -47,4 +47,91 @@ export const MOBILE_LABELS = {
   loadPlanOnWeb: "Lập kế hoạch xe thực hiện trên web",
   estimateOnWeb: "Ước tính xe thực hiện trên web",
   printOnWeb: "In trên web",
+
+  // Điều hướng. Mục hub nào web đã có hằng số (vd `UI_LABELS.receipt.pageTitle`) thì `nav-config.ts`
+  // dùng thẳng hằng số đó; ở đây chỉ có nhãn và tooltip tiếng Anh mà `BackofficeShell.tsx` của web gõ
+  // thẳng trong component (G18).
+  tabs: {
+    inbound: "Nhập hàng",
+    warehouse: "Kho",
+    fulfillment: "Thực hiện đơn",
+    account: "Tài khoản",
+  },
+  nav: {
+    putaway: "Cất hàng",
+    warehouseMap: "Kho map & slotting",
+    slotting: "Gợi ý vị trí",
+    adjustments: "Điều chỉnh tồn",
+    movements: "Lịch sử biến động",
+    /** Dòng phụ của mục hub = tooltip menu web, nguyên văn. */
+    tooltips: {
+      receipts: "Goods receipts",
+      putaway: "Putaway",
+      inventory: "Inventory Overview",
+      inventoryItems: "Inventory items",
+      warehouseMap: "Warehouse Map",
+      slotting: "Slotting Suggestions",
+      transfers: "Inter-warehouse Transfers",
+      moves: "Intra-warehouse Moves",
+      adjustments: "Stock adjustments",
+      movements: "Stock movement history",
+      orders: "Orders",
+      picking: "Picking",
+      packing: "Packing",
+      putBacks: "Put-back",
+      shipments: "Shipments waiting for dispatch",
+      loads: "Loading & carrier handover",
+    },
+  },
+
+  // Khung ứng dụng: cấu hình, đăng nhập, phiên. "Đang xác minh phiên đăng nhập", lỗi xác minh và
+  // "Thử lại" đã có ở web (`AUTH_UI`), nên không chép lại ở đây.
+  appName: "StockFlow Backoffice",
+  login: {
+    title: "Đăng nhập",
+    username: "Tên đăng nhập",
+    password: "Mật khẩu",
+    submit: "Đăng nhập",
+    showPassword: "Hiện mật khẩu",
+    retryIn: (seconds: number) => `Thử lại sau ${seconds} giây`,
+  },
+  relogin: {
+    title: "Phiên đăng nhập đã hết hạn",
+    description: "Đăng nhập lại để tiếp tục — màn hình hiện tại được giữ nguyên.",
+    signOut: "Đăng xuất",
+  },
+  sessionExpiry: {
+    warning: (minutes: number) =>
+      `Phiên sắp hết hạn (còn ${minutes} phút) — đăng nhập lại để không gián đoạn`,
+    action: "Đăng nhập lại",
+  },
+  config: {
+    title: "Thiếu cấu hình máy chủ",
+    description: "Đặt EXPO_PUBLIC_API_URL (gồm /api/v1) rồi khởi động lại ứng dụng.",
+  },
+
+  // Tab Tài khoản
+  account: {
+    title: "Tài khoản",
+    defaultWarehouse: "Kho mặc định",
+    defaultWarehouseHint:
+      "Điền sẵn bộ lọc kho ở Lấy hàng, Trả về kệ, Đóng gói, Lô giao, Chuyến xe — vẫn đổi được.",
+    noWarehouse: "Chưa chọn",
+    /** Một kho trong danh sách chọn: "MÃ · Tên". */
+    warehouseOption: (code: string, name: string) => `${code} · ${name}`,
+    /** Các vai trò của người dùng, một dòng. */
+    roles: (roles: readonly string[]) => roles.join(", "),
+    theme: "Giao diện",
+    themeSystem: "Theo hệ thống",
+    themeLight: "Sáng",
+    themeDark: "Tối",
+    sound: "Âm thanh khi quét",
+    haptics: "Rung khi quét",
+    sessionRemaining: (hours: number, minutes: number) => `Phiên còn ${hours} giờ ${minutes} phút`,
+    version: "Phiên bản",
+    /** Khi bản dựng không báo số phiên bản (không để trống ô). */
+    versionUnknown: "—",
+    signOut: "Đăng xuất",
+    signOutConfirm: "Đăng xuất khỏi thiết bị này?",
+  },
 } as const;

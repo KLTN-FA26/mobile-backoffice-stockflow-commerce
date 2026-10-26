@@ -15,16 +15,17 @@ Nguồn: spec §3.3 (bảng ranh giới), §2.4, §3.1, §3.2. Thay `state-persi
 
 ## Bảng ranh giới
 
-| Loại state                                          | Công cụ                                          |
-| --------------------------------------------------- | ------------------------------------------------ |
-| Server data                                         | **React Query**                                  |
-| Filter / search / sort / trang / segment            | **Route params** (`useListParams`)               |
-| Sở thích cá nhân (page size, segment mặc định…)     | **kv-store** qua `usePrefs`                      |
-| UI toàn cục: theme, kho mặc định, tắt tiếng, rung   | **zustand persist** (kv-store) — `use-app-store` |
-| Dữ liệu phiên tạm (`requestId`, danh sách quét lỗi) | **kv-store** namespace `session:*`               |
-| Form                                                | react-hook-form + `zodResolver`                  |
-| Token                                               | **chỉ** `expo-secure-store`                      |
-| UI cục bộ (sheet mở/đóng)                           | `useState`                                       |
+| Loại state                                             | Công cụ                                                      |
+| ------------------------------------------------------ | ------------------------------------------------------------ |
+| Server data                                            | **React Query**                                              |
+| Filter / search / sort / trang / segment               | **Route params** (`useListParams`)                           |
+| Sở thích cá nhân (page size, segment mặc định…)        | **kv-store** qua `usePrefs`                                  |
+| UI toàn cục: theme, tắt tiếng, rung (theo máy)         | **zustand persist** (kv-store) — `use-app-store`             |
+| Kho mặc định (theo **từng người dùng**, khoá `userId`) | **zustand persist** — `use-app-store.defaultWarehouseByUser` |
+| Dữ liệu phiên tạm (`requestId`, danh sách quét lỗi)    | **kv-store** namespace `session:*`                           |
+| Form                                                   | react-hook-form + `zodResolver`                              |
+| Token                                                  | **chỉ** `expo-secure-store`                                  |
+| UI cục bộ (sheet mở/đóng)                              | `useState`                                                   |
 
 "kv-store" = `expo-sqlite/kv-store` (D9; không MMKV, không AsyncStorage). Truy cập qua `src/lib/platform/storage.ts`, không gọi trực tiếp từ component.
 
@@ -47,10 +48,15 @@ Cùng chữ ký với `usePageConfig` của web: `{ config, updateConfig }`, **m
 
 ## zustand — `use-app-store`
 
-Theme (Sáng/Tối/Hệ thống), kho mặc định, tắt tiếng, rung — persist qua kv-store. `auth-store` **không persist token**. `scan-bus` (kết quả quét) là zustand
-**không persist**.
+Theme (Sáng/Tối/Hệ thống), tắt tiếng, rung — **theo máy**, người đăng nhập sau thấy lại. Kho mặc định — **theo người dùng**. Tất cả persist qua kv-store.
+`auth-store` **không persist token**. `scan-bus` (kết quả quét) là zustand **không persist**.
 
 - **Kho mặc định (N9)** chỉ là giá trị **điền sẵn** cho bộ lọc kho; không đổi hợp đồng API, không gửi `X-Warehouse-Id`.
+- Lưu **theo người dùng**: `defaultWarehouseByUser: Record<userId, warehouseId>`, ghi bằng `setDefaultWarehouse(userId, warehouseId | null)` (`null` xoá khoá). Lý do: trên máy kho
+  dùng chung, người đăng nhập sau không được thừa hưởng kho của người trước (và có thể không có quyền với kho đó).
+- Màn hình **chỉ đọc qua `useDefaultWarehouseId()`** (`src/hooks/use-default-warehouse-id.ts`, `string | null`; `null` khi chưa đăng nhập hoặc chưa chọn). Không đọc
+  `defaultWarehouseByUser` trực tiếp, không tự lấy `userId` rồi tra bảng. Id có thể trỏ tới kho đã ngừng hoạt động — màn có danh sách kho đối chiếu với danh sách đó.
+- Đổi hình dạng state persist → tăng `version` và viết `migrate` (hiện `version: 1`; bản 0 có `defaultWarehouseId` dùng chung toàn máy, bị bỏ vì không biết của ai).
 
 ## `session:*` — dữ liệu phiên tạm
 

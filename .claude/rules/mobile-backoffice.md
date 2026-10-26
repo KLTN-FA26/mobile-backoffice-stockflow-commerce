@@ -30,8 +30,11 @@ Trước khi dựng màn mới: chọn đúng 1 trong 5 loại rồi chạy chec
 
 - Mỗi tab có Stack riêng để thanh tab hiện ở hub và danh sách; **trạm thao tác và form toàn màn ẩn thanh tab**
   (`tabBarStyle: { display: "none" }`) — thêm chỗ và tránh chuyển tab nhầm giữa ca.
-- 4 tab: Nhập hàng · Kho · Thực hiện đơn · Tài khoản. Tab không còn mục nào thấy được → ẩn tab (`NAV_GROUPS` ở `src/constants/mobile/nav.ts`
-  giữ đúng item + mã quyền của `BackofficeShell.tsx` web).
+- 4 tab: Nhập hàng · Kho · Thực hiện đơn · Tài khoản. Tab không còn mục nào thấy được → ẩn tab (`NAV_GROUPS` ở `src/components/mobile/nav-config.ts`
+  giữ đúng item + mã quyền của `BackofficeShell.tsx` web; không đặt trong `src/constants/mobile` vì cần kiểu `PermissionCode` của `@/lib/auth`,
+  mà `src/constants` không import gì trong `src/`).
+- Chưa biết quyền (đang tải / lỗi tải lần đầu) → giữ đủ tab; hub hiện skeleton hoặc `LoadErrorState kind="permissions"` + "Thử lại".
+  Refetch nền lỗi (mỗi lần quay lại foreground) → giữ quyền đã biết, không đổi tab (R39).
 
 ## Overlay — sheet hay màn riêng
 

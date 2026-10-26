@@ -308,6 +308,13 @@
       "sourceBlob": "21cfc136e573289346a60f1dfac7b40ce5ce5806"
     },
     {
+      "source": "src/lib/auth/components/PermissionBoundary.tsx",
+      "target": "src/lib/auth/components/PermissionBoundary.tsx",
+      "mode": "adapted",
+      "sourceBlob": "a1eccb403ddc872564bf33670e128a3c7f8ee5cf",
+      "note": "Viết lại cho RN, giữ ngữ nghĩa web: chưa đăng nhập/đang tải → skeleton theo variant (ListSkeleton | DetailSkeleton của mobile thay PageSkeleton); lỗi khác 403 → LoadErrorState kind=\"permissions\" (\"Không tải được quyền truy cập\") + Thử lại = query.refetch() thay section PERMISSION_UI.errorTitle; 403 hoặc thiếu mã → LoadErrorState kind=\"forbidden\" với PERMISSION_UI.deniedTitle/deniedDescription; thêm prop mode \"all\" (mặc định = web) | \"any\""
+    },
+    {
       "source": "src/lib/auth/login-error.ts",
       "target": "src/lib/auth/login-error.ts",
       "mode": "verbatim",
@@ -396,6 +403,13 @@
       "target": "src/lib/format/number.ts",
       "mode": "verbatim",
       "sourceBlob": "8dcbfddad3f1e6babc4132ef1a83bb1853683c32"
+    },
+    {
+      "source": "src/lib/references/warehouse-options.ts",
+      "target": "src/lib/references/warehouse-options.ts",
+      "mode": "adapted",
+      "sourceBlob": "de52c398079c6eaf834eda93fd6c7bf64bb435b4",
+      "note": "params dạng object thay URLSearchParams; bỏ warehouseId khỏi key directory"
     },
     {
       "source": "src/lib/status-map.ts",

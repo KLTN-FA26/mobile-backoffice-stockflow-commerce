@@ -39,4 +39,96 @@ describe("mobile labels", () => {
     expect(MOBILE_LABELS.decrease("Số lượng")).toBe("Giảm Số lượng");
     expect(MOBILE_LABELS.increase("Số lượng")).toBe("Tăng Số lượng");
   });
+
+  it("keeps the copy of the app shell, login and session screens", () => {
+    expect(MOBILE_LABELS).toMatchObject({
+      appName: "StockFlow Backoffice",
+      login: {
+        title: "Đăng nhập",
+        username: "Tên đăng nhập",
+        password: "Mật khẩu",
+        submit: "Đăng nhập",
+        showPassword: "Hiện mật khẩu",
+      },
+      relogin: {
+        title: "Phiên đăng nhập đã hết hạn",
+        description: "Đăng nhập lại để tiếp tục — màn hình hiện tại được giữ nguyên.",
+        signOut: "Đăng xuất",
+      },
+      sessionExpiry: { action: "Đăng nhập lại" },
+      config: {
+        title: "Thiếu cấu hình máy chủ",
+        description: "Đặt EXPO_PUBLIC_API_URL (gồm /api/v1) rồi khởi động lại ứng dụng.",
+      },
+    });
+    expect(MOBILE_LABELS.login.retryIn(30)).toBe("Thử lại sau 30 giây");
+    expect(MOBILE_LABELS.sessionExpiry.warning(12)).toBe(
+      "Phiên sắp hết hạn (còn 12 phút) — đăng nhập lại để không gián đoạn",
+    );
+  });
+
+  it("keeps the tab names and the hub copy the web has no constant for", () => {
+    expect(MOBILE_LABELS.tabs).toEqual({
+      inbound: "Nhập hàng",
+      warehouse: "Kho",
+      fulfillment: "Thực hiện đơn",
+      account: "Tài khoản",
+    });
+    // Labels and English tooltips typed inline in the web BackofficeShell.tsx (G18).
+    expect(MOBILE_LABELS.nav).toEqual({
+      putaway: "Cất hàng",
+      warehouseMap: "Kho map & slotting",
+      slotting: "Gợi ý vị trí",
+      adjustments: "Điều chỉnh tồn",
+      movements: "Lịch sử biến động",
+      tooltips: {
+        receipts: "Goods receipts",
+        putaway: "Putaway",
+        inventory: "Inventory Overview",
+        inventoryItems: "Inventory items",
+        warehouseMap: "Warehouse Map",
+        slotting: "Slotting Suggestions",
+        transfers: "Inter-warehouse Transfers",
+        moves: "Intra-warehouse Moves",
+        adjustments: "Stock adjustments",
+        movements: "Stock movement history",
+        orders: "Orders",
+        picking: "Picking",
+        packing: "Packing",
+        putBacks: "Put-back",
+        shipments: "Shipments waiting for dispatch",
+        loads: "Loading & carrier handover",
+      },
+    });
+  });
+
+  it("keeps the copy of the account tab and its display formats", () => {
+    expect(MOBILE_LABELS.account).toMatchObject({
+      title: "Tài khoản",
+      defaultWarehouse: "Kho mặc định",
+      noWarehouse: "Chưa chọn",
+      theme: "Giao diện",
+      themeSystem: "Theo hệ thống",
+      themeLight: "Sáng",
+      themeDark: "Tối",
+      sound: "Âm thanh khi quét",
+      haptics: "Rung khi quét",
+      version: "Phiên bản",
+      versionUnknown: "—",
+      signOut: "Đăng xuất",
+      signOutConfirm: "Đăng xuất khỏi thiết bị này?",
+    });
+    expect(MOBILE_LABELS.account.sessionRemaining(7, 59)).toBe("Phiên còn 7 giờ 59 phút");
+    expect(MOBILE_LABELS.account.warehouseOption("HN", "Kho Hà Nội")).toBe("HN · Kho Hà Nội");
+    expect(MOBILE_LABELS.account.roles(["WAREHOUSE_STAFF", "ORDER_COORDINATOR"])).toBe(
+      "WAREHOUSE_STAFF, ORDER_COORDINATOR",
+    );
+    expect(MOBILE_LABELS.account.roles(["WAREHOUSE_STAFF"])).toBe("WAREHOUSE_STAFF");
+    expect(MOBILE_LABELS.account.roles([])).toBe("");
+  });
+
+  it("does not copy strings the web constants already carry", () => {
+    // "Đang xác minh phiên đăng nhập" is AUTH_UI.verifyingSession (src/constants/auth.ts).
+    expect(MOBILE_LABELS).not.toHaveProperty("bootstrap");
+  });
 });

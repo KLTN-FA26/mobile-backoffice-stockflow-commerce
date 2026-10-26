@@ -1,10 +1,6 @@
-// eslint-disable-next-line no-restricted-imports -- placeholder screen until @/components/ui exists
-import { Text, View } from "react-native";
+import { StartRedirect } from "@/components/mobile/StartRedirect";
 
+/** App start: the login when signed out, else the first hub this user can see. */
 export default function Index() {
-  return (
-    <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-      <Text>StockFlow Backoffice</Text>
-    </View>
-  );
+  return <StartRedirect />;
 }

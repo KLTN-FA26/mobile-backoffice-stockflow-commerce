@@ -49,8 +49,9 @@ Muốn so với web mới nhất: người dùng tự `git fetch` ở repo web �
    `features/<in-scope>/{schemas,input-schemas,lifecycle,selectors,errors,status-helpers,…}.ts` = verbatim/adapted theo import;
    `features/*/{api,queries,mutations}.ts` = **adapted** (đổi client, bỏ đường BFF, kv-store thay sessionStorage); test của các file trên = adapted
    (`vi.*` → `jest.*`, giữ nguyên case); component `*.tsx` = **không copy**, viết mới cho RN.
-6. **Hằng số chỉ của mobile** (`MOBILE_ROUTES`, `NAV_GROUPS`, nhãn mobile, ngưỡng UI) → `src/constants/mobile/**` (không thuộc manifest). Không thêm vào
-   `src/constants/*.ts` verbatim.
+6. **Hằng số chỉ của mobile** (`MOBILE_ROUTES`, nhãn mobile, ngưỡng UI) → `src/constants/mobile/**` (không thuộc manifest). Không thêm vào
+   `src/constants/*.ts` verbatim. `NAV_GROUPS` ở `src/components/mobile/nav-config.ts`: nó cần kiểu `PermissionCode` của `@/lib/auth`, mà `src/constants`
+   không import gì trong `src/`.
 7. **Giữ hành vi web ở các điểm lệch (D7).** Muốn sửa → đề xuất sửa web trước, rồi sync. Mobile **không** tự sửa.
 8. Thiếu sót phía BE (không phải lỗi mobile): không có API cất hàng, nhận hàng chuyển kho, "kho của tôi", refresh token; BE bỏ qua `X-Warehouse-Id`.
 
