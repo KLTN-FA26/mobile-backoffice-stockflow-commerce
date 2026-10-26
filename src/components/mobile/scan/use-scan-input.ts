@@ -12,7 +12,7 @@ export type UseScanInputOptions = {
  * The typed side of a scan field, as the web's `useScanInput`: Enter sends the code and empties
  * the field, ✕ empties it, and a field that comes back from disabled takes the focus again, so the
  * next code from a keyboard-wedge scanner lands in it instead of nowhere. While disabled, Enter
- * does nothing. (The web also focuses on mount; here that is the field's `autoFocus`, since a
+ * does nothing. `focus` gives the keyboard back after the camera (unless disabled). (The web also focuses on mount; here that is the field's `autoFocus`, since a
  * keyboard popping up on every screen with a scan field would hide half the screen.)
  */
 export function useScanInput({ deliver, disabled }: UseScanInputOptions) {
@@ -35,6 +35,9 @@ export function useScanInput({ deliver, disabled }: UseScanInputOptions) {
     clear: () => {
       setValue("");
       inputRef.current?.focus();
+    },
+    focus: () => {
+      if (!disabled) inputRef.current?.focus();
     },
   };
 }

@@ -361,6 +361,16 @@ describe("scan check", () => {
     expect(AccessibilityInfo.announceForAccessibility).toHaveBeenCalledWith("PKG-001");
   });
 
+  it("scan check placeholder is short enough for the monospaced field", async () => {
+    // "…rồi bấm Enter" was cut off in the mono font on a 1080 px phone; the Enter hint stays in the
+    // field's accessibility hint.
+    await renderWithProviders(<AccountScreen />, { user: ALICE, permissions: [] });
+
+    const input = screen.getByLabelText(scan.testTitle);
+    expect(input).toHaveProp("placeholder", scan.placeholder);
+    expect(input).toHaveProp("accessibilityHint", scan.typeHint);
+  });
+
   it("the scan check reads one code with the camera", async () => {
     const push = jest.spyOn(router, "push").mockImplementation(() => undefined);
     const user = userEvent.setup();

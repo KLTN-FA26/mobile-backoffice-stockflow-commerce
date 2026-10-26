@@ -9,6 +9,7 @@ import { makeQueryClient } from "@/lib/api/query-client";
 import { wireReactQueryToNative } from "@/lib/platform/react-query-native";
 
 import { ToastProvider } from "@/components/shared/ToastProvider";
+import { ScreenBehindSheets } from "@/components/ui/sheet-a11y";
 
 import { ThemeProvider } from "./theme-provider";
 
@@ -23,7 +24,9 @@ const styles = StyleSheet.create({ root: { flex: 1 } });
  *   provider, and only there do they still get the theme's colour variables;
  * - the Toaster under the root view and the safe area, so it can be swiped and clears the notch,
  *   and after the sheet provider rather than inside it: it then mounts after the sheet portal host
- *   and draws above an open sheet (a failed sheet action reports through a toast).
+ *   and draws above an open sheet (a failed sheet action reports through a toast);
+ * - the screens inside `ScreenBehindSheets`, so screen readers skip them while a sheet is open
+ *   (the sheets themselves render in the portal after it, so they stay readable).
  */
 export function AppProviders({ children }: { children: ReactNode }) {
   const [queryClient] = useState(makeQueryClient);
@@ -35,7 +38,9 @@ export function AppProviders({ children }: { children: ReactNode }) {
       <SafeAreaProvider initialMetrics={initialWindowMetrics}>
         <ThemeProvider>
           <QueryClientProvider client={queryClient}>
-            <BottomSheetModalProvider>{children}</BottomSheetModalProvider>
+            <BottomSheetModalProvider>
+              <ScreenBehindSheets>{children}</ScreenBehindSheets>
+            </BottomSheetModalProvider>
             <ToastProvider />
           </QueryClientProvider>
         </ThemeProvider>

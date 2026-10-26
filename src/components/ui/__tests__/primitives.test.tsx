@@ -638,9 +638,10 @@ describe("Sheet", () => {
     expect(screen.queryByLabelText(/bottom sheet/i, { hidden: true })).toBeNull();
   });
 
-  it("sheet announces its title once each time it opens, on Android too", async () => {
+  // Android moves TalkBack's focus to the title instead (acceptance-fixes.test.tsx, L3).
+  it("sheet announces its title once each time it opens on iOS", async () => {
     const os = Platform.OS;
-    Object.defineProperty(Platform, "OS", { configurable: true, get: () => "android" });
+    Object.defineProperty(Platform, "OS", { configurable: true, get: () => "ios" });
     const announce = jest
       .spyOn(AccessibilityInfo, "announceForAccessibility")
       .mockImplementation(() => undefined);

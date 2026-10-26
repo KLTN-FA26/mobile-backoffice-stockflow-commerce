@@ -126,9 +126,10 @@ với cache Jest lạnh mất vài phút, các lần sau khoảng 1,5 phút.
 
 CI (`.github/workflows/ci.yml`) chạy `pnpm run validate` cho mỗi pull request và mỗi lần push vào `develop` hoặc `main`; một push mới vào cùng PR hoặc nhánh huỷ lần chạy
 đang dở (`concurrency`). Job checkout thêm
-repo web `KLTN-FA26/UI` (nhánh `develop`) làm thư mục anh em của repo này (xem "Đồng bộ với web"), nên repo cần secret `WEB_REPO_TOKEN`
-(quyền đọc repo web). **PR từ fork không nhận secret** (GitHub không gửi `WEB_REPO_TOKEN` cho workflow của fork), nên bước checkout repo web sẽ lỗi và CI đỏ ở đó: người
-có quyền ghi đẩy nhánh đó lên repo này (hoặc chạy `pnpm run validate` ở máy dev) để có kết quả CI thật. Chưa có job EAS; thêm khi có `EXPO_TOKEN`.
+repo web `KLTN-FA26/fe-backoffice-stockflow-commerce` (tên cũ `KLTN-FA26/UI`; nhánh `develop`) làm thư mục anh em của repo này (xem "Đồng bộ với web"). Repo web
+public nên token mặc định của workflow (`github.token`) đọc được: **không cần secret**, PR từ fork cũng chạy được. Secret `WEB_REPO_TOKEN` (quyền đọc repo web) chỉ cần
+nếu repo web chuyển sang private — workflow dùng nó khi có. Khi đó PR từ fork không nhận secret (GitHub không gửi secret cho workflow của fork) nên bước checkout repo web
+sẽ đỏ: người có quyền ghi đẩy nhánh đó lên repo này (hoặc chạy `pnpm run validate` ở máy dev) để có kết quả CI thật. Chưa có job EAS; thêm khi có `EXPO_TOKEN`.
 
 ## Đồng bộ với web
 

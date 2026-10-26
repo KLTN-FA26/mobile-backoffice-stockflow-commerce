@@ -14,12 +14,14 @@ import type { ColorValue } from "react-native";
  */
 const TAB_BAR_CONTENT_HEIGHT = 60;
 const TAB_ICON_SIZE = 22;
+const TAB_LABEL_MIN_SCALE = 0.8;
 
 type TabLabelProps = { focused: boolean; children: string };
 
 /**
  * The tab name, through the app's `Text`: 12 px, capped at the 1.3 font-scale multiplier like
- * every other label (the library's own label scales without a cap on Android).
+ * every other label (the library's own label scales without a cap on Android). One line that
+ * shrinks to fit: at the cap "Thực hiện đơn" is wider than a quarter of the screen.
  */
 function renderTabLabel({ focused, children }: TabLabelProps) {
   return (
@@ -28,6 +30,8 @@ function renderTabLabel({ focused, children }: TabLabelProps) {
       weight={focused ? "semibold" : "medium"}
       tone={focused ? "primary" : "secondary"}
       numberOfLines={1}
+      adjustsFontSizeToFit
+      minimumFontScale={TAB_LABEL_MIN_SCALE}
     >
       {children}
     </Text>

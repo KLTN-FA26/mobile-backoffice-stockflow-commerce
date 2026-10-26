@@ -14,6 +14,11 @@ export const SCAN_MOBILE_LIMITS = {
   dedupeWindowMs: 1500,
   /** Thời gian giữ phản hồi "quét được". */
   positiveFeedbackMs: 1500,
+  /**
+   * Chờ màn camera đóng hẳn rồi mới focus lại ô quét sau "Nhập tay": Android bỏ qua `focus()` gọi
+   * trong lúc modal còn đang trượt xuống (đo trên emulator: gọi ngay thì không có bàn phím).
+   */
+  typeInsteadFocusDelayMs: 400,
 } as const;
 
 /** Ngưỡng giao diện chung. */

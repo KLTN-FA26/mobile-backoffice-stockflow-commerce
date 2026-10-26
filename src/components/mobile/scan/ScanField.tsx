@@ -12,8 +12,7 @@ import { FieldFrame, IconButton, TextField } from "@/components/ui";
 
 import { ScanCameraButton } from "./ScanCameraButton";
 import { ScanFeedbackBanner } from "./ScanFeedbackBanner";
-import { useScanCamera } from "./use-scan-camera";
-import { useScanInput } from "./use-scan-input";
+import { useScanField } from "./use-scan-field";
 import { useWarnInSheet } from "./use-warn-in-sheet";
 
 import type { ScanFeedback } from "./scan-bus";
@@ -70,19 +69,14 @@ export function ScanField({
   const [focused, setFocused] = useState(false);
   useWarnInSheet();
 
-  // Typed and camera codes alike: trim, normalize, skip empty.
-  const deliver = (raw: string): boolean => {
-    const code = normalize ? normalize(raw.trim()) : raw.trim();
-    if (code !== "") onSubmit(code);
-    return code !== "";
-  };
-
-  const { inputRef, value, onChangeText, submit, clear } = useScanInput({ deliver, disabled });
-  // A disabled field takes no code at all, not even from a camera that is still open.
-  const onCode = (code: string) => {
-    if (!disabled) deliver(code);
-  };
-  const openCamera = useScanCamera({ title: label, mode: cameraMode, feedback, onCode });
+  const { inputRef, value, onChangeText, submit, clear, openCamera } = useScanField({
+    label,
+    onSubmit,
+    normalize,
+    cameraMode,
+    disabled,
+    feedback,
+  });
 
   const idleBorder = focused ? "border-brand" : "border-border-default";
   const border = feedback ? FEEDBACK_BORDER[feedback.tone] : idleBorder;

@@ -28,6 +28,8 @@ cao 52px. Dùng cho **mọi** chỗ nhập mã: vị trí, SKU/barcode, mã ki�
 - Mã từ camera đi cùng đường `trim` → `normalize` → `onSubmit`.
 - Chạm camera lần hai khi scanner của ô này chưa đóng → không mở thêm (R48): `CameraScanner` báo đóng qua `scan-bus`
   (`publishScannerClosed`, lúc unmount — mọi cách đóng: nút, mã đầu tiên, vuốt/back), nên ô không cần biết navigator.
+- Đóng camera bằng "Nhập tay" → ô lấy lại focus và bàn phím: tín hiệu đóng mang cách đóng (`"type-instead"` / `"closed"`), ô gọi `focus()` sau
+  `SCAN_MOBILE_LIMITS.typeInsteadFocusDelayMs` (400 ms — Android bỏ qua `focus()` khi modal còn đang đóng; nghiệm thu L6). Cách đóng khác không lấy focus.
 - `feedback` hiện dưới ô (`ScanFeedbackBanner`) và, khi camera liên tục đang mở, được chuyển sang camera (`publishScanFeedback`) mỗi khi là object mới.
 - Tối đa **một** đăng ký `scan-bus` cho mỗi ô: mở camera lần nữa thay đăng ký cũ; unmount thì huỷ; chế độ một lần huỷ sau mã đầu tiên.
 - **Không đặt `ScanField` trong `Sheet`** (khi `__DEV__`, `useWarnInSheet` ghi `console.warn`): camera mở route toàn màn đè lên sheet, logic bàn phím
@@ -70,6 +72,8 @@ Modal toàn màn (`presentation: fullScreenModal`), `expo-camera` `CameraView`; 
 - Thêm haptics (N10): đúng `notificationAsync(Success)`, sai `notificationAsync(Error)` — kho ồn, người dùng không nhìn màn hình.
 - Âm báo qua `expo-audio` (2 file âm ngắn: đúng 1046Hz/90ms, sai 220Hz/320ms — `assets/sounds/*.wav`, sinh bằng `scripts/generate-scan-tones.mjs`),
   tôn trọng cờ `muted`; công tắc âm thanh/rung ở tab Tài khoản. Cờ đọc lúc quét (`useAppStore.getState()`).
+- Âm báo không giành audio focus: trước âm đầu tiên đặt một lần `setAudioModeAsync({ interruptionMode: "mixWithOthers" })` — không có nó Android xin
+  `AUDIOFOCUS_GAIN_TRANSIENT` và làm dừng nhạc đang phát (nghiệm thu L9).
 - Âm và rung nằm ở `src/lib/platform/feedback-effects.ts` (fire-and-forget, nuốt lỗi, chỉ log khi `__DEV__`); component chỉ dùng qua `useScanFeedback`.
 - Nhịp hiển thị (đúng tắt sau 1,5s, sai giữ) nằm ở một chỗ: `useTransientFeedback` (`src/hooks/use-transient-feedback.ts`), dùng chung cho
   `useScanFeedback` và phản hồi đè trên camera liên tục.

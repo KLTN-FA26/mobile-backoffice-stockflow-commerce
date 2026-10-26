@@ -28,6 +28,7 @@ import { BOTTOM_ACTION_BAR_TEST_ID, BottomActionBar } from "../BottomActionBar";
 import { RouteErrorBoundary } from "../RouteErrorBoundary";
 import { ScreenHeader } from "../ScreenHeader";
 import { NAV_GROUPS } from "../nav-config";
+import { useTabScreenOptions } from "../tab-bar";
 import { canSeeNavItem, useNavVisibility } from "../use-nav-visibility";
 
 import type { AuthUser } from "@/lib/auth/auth-store";
@@ -578,11 +579,56 @@ describe("screen parts", () => {
     const retry = jest.fn(async () => undefined);
     const user = userEvent.setup();
     await render(
-      <RouteErrorBoundary error={new ApiError(0, "NETWORK_ERROR", "x")} retry={retry} />,
+      <QueryClientProvider client={new QueryClient()}>
+        <RouteErrorBoundary error={new ApiError(0, "NETWORK_ERROR", "x")} retry={retry} />
+      </QueryClientProvider>,
     );
+    // A failed load keeps the load error copy and has no extra way out.
+    expect(screen.queryByRole("button", { name: MOBILE_LABELS.renderError.home })).toBeNull();
 
     expect(screen.getByText(UI_LABELS.loadError.networkTitle)).toBeOnTheScreen();
     await user.press(screen.getByRole("button", { name: MOBILE_LABELS.retry }));
     expect(retry).toHaveBeenCalledTimes(1);
+  });
+
+  it("render error shows its own copy and a way back to the first hub", async () => {
+    const retry = jest.fn(async () => undefined);
+    const replace = jest.spyOn(router, "replace").mockImplementation(() => undefined);
+    const user = userEvent.setup();
+    try {
+      await render(
+        <QueryClientProvider client={new QueryClient()}>
+          <RouteErrorBoundary error={new TypeError("x is undefined")} retry={retry} />
+        </QueryClientProvider>,
+      );
+
+      // A crash while rendering is not a failed load: no "Không tải được dữ liệu".
+      expect(screen.getByText(MOBILE_LABELS.renderError.title)).toBeOnTheScreen();
+      expect(screen.getByText(MOBILE_LABELS.renderError.description)).toBeOnTheScreen();
+      await user.press(screen.getByRole("button", { name: MOBILE_LABELS.retry }));
+      expect(retry).toHaveBeenCalledTimes(1);
+      await user.press(screen.getByRole("button", { name: MOBILE_LABELS.renderError.home }));
+      // Permissions not known here, so every tab is kept and the first hub is Nhập hàng — the same
+      // place the start route would pick (`useNavVisibility().firstVisibleHref`).
+      expect(replace).toHaveBeenCalledWith(MOBILE_ROUTES.hubs.inbound);
+      // …and the boundary is cleared, or a hub in the same tab would still show the error.
+      expect(retry).toHaveBeenCalledTimes(2);
+    } finally {
+      replace.mockRestore();
+    }
+  });
+
+  it("tab label shrinks to fit instead of cutting a long name", async () => {
+    // At the 1.3 font-scale cap "Thực hiện đơn" did not fit a quarter of a 1080 px phone.
+    function TabLabelProbe() {
+      const { tabBarLabel } = useTabScreenOptions();
+      return tabBarLabel({ focused: false, children: "Thực hiện đơn" });
+    }
+    await render(<TabLabelProbe />);
+
+    const label = screen.getByText("Thực hiện đơn");
+    expect(label).toHaveProp("numberOfLines", 1);
+    expect(label).toHaveProp("adjustsFontSizeToFit", true);
+    expect(label.props.minimumFontScale).toBeGreaterThanOrEqual(0.75);
   });
 });

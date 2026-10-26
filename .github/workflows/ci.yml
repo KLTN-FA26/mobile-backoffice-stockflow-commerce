@@ -35,13 +35,15 @@ jobs:
           persist-credentials: false
 
       # The ported files are compared with the web repo's develop (port-manifest.json webRef).
+      # The web repo is public, so the workflow token reads it. WEB_REPO_TOKEN is only needed if it
+      # turns private; an unset secret is an empty string, which actions/checkout rejects, hence `||`.
       - name: Check out the web repo
         uses: actions/checkout@v4
         with:
-          repository: KLTN-FA26/UI
+          repository: KLTN-FA26/fe-backoffice-stockflow-commerce
           ref: develop
           path: stockflow-ui
-          token: ${{ secrets.WEB_REPO_TOKEN }}
+          token: ${{ secrets.WEB_REPO_TOKEN || github.token }}
           fetch-depth: 0
           persist-credentials: false
 

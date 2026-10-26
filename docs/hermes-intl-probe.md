@@ -31,18 +31,18 @@ Khi so sánh, khoảng trắng không ngắt (U+00A0) và khoảng trắng hẹp
 
 | Hàm                           | Kỳ vọng                | Android (Hermes) | iPhone (Hermes) |
 | ----------------------------- | ---------------------- | ---------------- | --------------- |
-| `formatDate(iso)`             | `15 thg 3, 2026`       | chờ chạy         | chờ chạy        |
-| `formatDateTime(iso)`         | `00:30 15 thg 3, 2026` | chờ chạy         | chờ chạy        |
-| `formatTime(iso)`             | `00:30:05`             | chờ chạy         | chờ chạy        |
-| `toLocalIsoDate(iso)`         | `2026-03-15`           | chờ chạy         | chờ chạy        |
-| `formatMoney(1234567, "VND")` | `1.234.567 ₫`          | chờ chạy         | chờ chạy        |
-| `formatNumber(1234567.5)`     | `1.234.567,5`          | chờ chạy         | chờ chạy        |
-| `formatFixed(33.1966, 2)`     | `33,20`                | chờ chạy         | chờ chạy        |
-| `formatPercent(0.856)`        | `85,6%`                | chờ chạy         | chờ chạy        |
-| `formatCompactNumber(1500)`   | `1,5 N`                | chờ chạy         | chờ chạy        |
-| `formatMoney(1234.5, "USD")`  | `$1,234.50`            | chờ chạy         | chờ chạy        |
+| `formatDate(iso)`             | `15 thg 3, 2026`       | OK               | chờ chạy        |
+| `formatDateTime(iso)`         | `00:30 15 thg 3, 2026` | OK               | chờ chạy        |
+| `formatTime(iso)`             | `00:30:05`             | OK               | chờ chạy        |
+| `toLocalIsoDate(iso)`         | `2026-03-15`           | OK               | chờ chạy        |
+| `formatMoney(1234567, "VND")` | `1.234.567 ₫`          | OK               | chờ chạy        |
+| `formatNumber(1234567.5)`     | `1.234.567,5`          | OK               | chờ chạy        |
+| `formatFixed(33.1966, 2)`     | `33,20`                | OK               | chờ chạy        |
+| `formatPercent(0.856)`        | `85,6%`                | OK               | chờ chạy        |
+| `formatCompactNumber(1500)`   | `1,5 N`                | OK               | chờ chạy        |
+| `formatMoney(1234.5, "USD")`  | `$1,234.50`            | OK               | chờ chạy        |
 
-Thiết bị đã chạy: Android emulator — _chờ chạy_ (API level: …) · iPhone — _chờ chạy_ (iOS: …) · Expo Go: _chờ chạy_.
+Thiết bị đã chạy: Android emulator Pixel_6 — 10/10 OK (API level 37, Android 17, 2026-10-26) · iPhone — _chờ chạy_ (iOS: …) · Expo Go: 58.0.5 (Android).
 
 ## Quyết định theo kết quả
 

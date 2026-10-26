@@ -60,7 +60,9 @@ export function Switch({
         <RNSwitch
           value={value}
           trackColor={{ false: colors["border-strong"], true: colors.brand }}
-          thumbColor={colors["bg-surface"]}
+          // Android's thumb overhangs the track onto the card: the `thumb` token stays visible on
+          // the dark card, where the surface colour would vanish.
+          thumbColor={colors.thumb}
           ios_backgroundColor={colors["border-strong"]}
         />
       </View>

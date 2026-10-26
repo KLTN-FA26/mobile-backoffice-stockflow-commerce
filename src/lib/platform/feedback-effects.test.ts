@@ -32,6 +32,32 @@ afterEach(() => {
 });
 
 describe("playScanTone", () => {
+  it("mixes the tone with other audio instead of taking the audio focus", () => {
+    // Without a mode expo-audio asks Android for transient focus: every scan paused the music.
+    const { effects, audio } = load();
+    expect(audio.setAudioModeAsync).not.toHaveBeenCalled();
+
+    effects.playScanTone("positive");
+    effects.playScanTone("danger");
+
+    expect(audio.setAudioModeAsync).toHaveBeenCalledTimes(1);
+    expect(audio.setAudioModeAsync).toHaveBeenCalledWith({ interruptionMode: "mixWithOthers" });
+    // Set before the first player exists, so the very first tone already mixes.
+    expect(audio.setAudioModeAsync.mock.invocationCallOrder[0]).toBeLessThan(
+      audio.createAudioPlayer.mock.invocationCallOrder[0] ?? 0,
+    );
+  });
+
+  it("still plays when the audio mode cannot be set", async () => {
+    const { effects, audio } = load();
+    audio.setAudioModeAsync.mockRejectedValueOnce(new Error("no audio session"));
+
+    effects.playScanTone("positive");
+    await Promise.resolve();
+
+    expect(audio.__played).toHaveBeenCalled();
+  });
+
   it("creates one player per tone, lazily, and rewinds it before each play", () => {
     const { effects, audio } = load();
     expect(audio.createAudioPlayer).not.toHaveBeenCalled();

@@ -22,7 +22,7 @@ import {
   renderHandle,
   useBackButton,
 } from "./SheetParts";
-import { Text } from "./Text";
+import { SheetTitle, useReportSheetOpen } from "./sheet-a11y";
 import { SheetContextProvider } from "./sheet-context";
 
 import type { ReactNode } from "react";
@@ -51,8 +51,9 @@ export type SheetProps = {
  * sheet driven by `open`. Needs `BottomSheetModalProvider` and `GestureHandlerRootView` above it.
  * A swipe, a tap on the backdrop or the Back button closes it and reports `onOpenChange(false)`,
  * unless it is not `dismissible`. Text fields inside it (`Input`, `SearchField`, `QuantityStepper`)
- * switch to the keyboard-aware input by themselves (R30). For screen readers it says its title when
- * it opens and keeps VoiceOver off the screen behind; it moves in `MOTION_MS.standard`.
+ * switch to the keyboard-aware input by themselves (R30). For screen readers it hides the screen
+ * behind (VoiceOver and TalkBack), announces its title on iOS and moves TalkBack's focus to it on
+ * Android; it moves in `MOTION_MS.standard`.
  */
 export function Sheet({
   open,
@@ -70,8 +71,9 @@ export function Sheet({
   // True from present() until the sheet goes away, however that happens.
   const shownRef = useRef(false);
   const animationConfigs = useBottomSheetTimingConfigs({ duration: MOTION_MS.standard });
-  // Nothing in a sheet is a live region, so Android needs the announcement as well.
-  useAnnounce(open ? title : null, { android: true });
+  // iOS hears the title; on Android `SheetTitle` takes TalkBack's focus, which reads it.
+  useAnnounce(open ? title : null);
+  useReportSheetOpen(open);
 
   useEffect(() => {
     if (open) {
@@ -96,9 +98,7 @@ export function Sheet({
 
   const body = (
     <View className="gap-[12px] px-[16px] pb-[16px]">
-      <Text variant="title" accessibilityRole="header">
-        {title}
-      </Text>
+      <SheetTitle title={title} />
       {children}
     </View>
   );

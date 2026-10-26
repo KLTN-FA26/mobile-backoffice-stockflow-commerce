@@ -27,7 +27,8 @@ type ThemedToken =
   | "ink-tertiary"
   | "ink-inverse"
   | "brand"
-  | "accent";
+  | "accent"
+  | "thumb";
 
 /** Tokens that keep one value in both themes: the seven status tones and the status dots. */
 type SharedToken =
@@ -62,6 +63,7 @@ const LIGHT_THEMED: Record<ThemedToken, string> = {
   "ink-inverse": "#FFFFFF",
   brand: "#1A1B18",
   accent: "#1E88E5",
+  thumb: "#FFFFFF",
 };
 
 const DARK_THEMED: Record<ThemedToken, string> = {
@@ -77,6 +79,9 @@ const DARK_THEMED: Record<ThemedToken, string> = {
   "ink-inverse": "#1A1B18",
   brand: "#F4F4F1",
   accent: "#4EA6F0",
+  // Android's switch thumb overhangs its track, so it sits on the card: the surface colour (white in
+  // light) would vanish on the dark card. Mobile-only token; both values already exist in the palette.
+  thumb: "#A8AAA3",
 };
 
 // `dot-*` are brighter than the tones above: they colour dots and tool icons only, never text.

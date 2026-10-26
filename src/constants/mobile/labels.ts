@@ -135,10 +135,19 @@ export const MOBILE_LABELS = {
     signOutConfirm: "Đăng xuất khỏi thiết bị này?",
   },
 
+  // Màn bị lỗi khi hiển thị (route error boundary): khác với lỗi tải dữ liệu.
+  renderError: {
+    title: "Màn hình gặp lỗi",
+    description: "Đã xảy ra lỗi khi hiển thị màn hình này.",
+    home: "Về trang đầu",
+  },
+
   // Quét mã: ô quét (`ScanField`), màn camera (`CameraScanner`) và mục "Kiểm tra quét mã" ở tab
   // Tài khoản. Câu chữ phản hồi của từng trạm (đúng/sai) là của web, không nằm ở đây.
   scan: {
     openCamera: "Mở camera quét mã",
+    // Ngắn: ô quét dùng font mono rộng, câu dài bị cắt. "Bấm Enter" nằm ở `typeHint` (gợi ý cho screen reader).
+    placeholder: "Quét hoặc nhập mã",
     typeHint: "Quét hoặc nhập mã rồi bấm Enter",
     clear: "Xoá mã",
     close: "Đóng",

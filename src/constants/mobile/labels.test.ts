@@ -130,6 +130,7 @@ describe("mobile labels", () => {
   it("keeps the copy of the scan field, the camera scanner and the scan check", () => {
     expect(MOBILE_LABELS.scan).toEqual({
       openCamera: "Mở camera quét mã",
+      placeholder: "Quét hoặc nhập mã",
       typeHint: "Quét hoặc nhập mã rồi bấm Enter",
       clear: "Xoá mã",
       close: "Đóng",
@@ -141,6 +142,14 @@ describe("mobile labels", () => {
       testTitle: "Kiểm tra quét mã",
       testHint: "Quét thử một mã để kiểm tra camera, âm báo và rung.",
       lastCode: "Mã vừa đọc",
+    });
+  });
+
+  it("keeps the copy of the screen shown when a screen fails to render", () => {
+    expect(MOBILE_LABELS.renderError).toEqual({
+      title: "Màn hình gặp lỗi",
+      description: "Đã xảy ra lỗi khi hiển thị màn hình này.",
+      home: "Về trang đầu",
     });
   });
 

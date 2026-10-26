@@ -32,7 +32,7 @@ export function ScanCheckSection() {
       <View className="gap-[8px] py-[12px]">
         <ScanField
           label={scan.testTitle}
-          placeholder={scan.typeHint}
+          placeholder={scan.placeholder}
           cameraMode="single"
           feedback={feedback}
           onSubmit={onScan}

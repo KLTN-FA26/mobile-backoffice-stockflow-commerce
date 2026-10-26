@@ -44,6 +44,8 @@ const SPEC_LIGHT: Record<ColorToken, string> = {
   "ink-inverse": "FFFFFF",
   brand: "1A1B18",
   accent: "1E88E5",
+  // Mobile-only (Android switch thumb): light = bg-surface, dark = ink-secondary.
+  thumb: "FFFFFF",
   positive: "1F9D55",
   info: "2B7FC4",
   warning: "D98207",
@@ -72,6 +74,7 @@ const SPEC_DARK: Record<ColorToken, string> = {
   "ink-inverse": "1A1B18",
   brand: "F4F4F1",
   accent: "4EA6F0",
+  thumb: "A8AAA3",
 };
 
 const SHARED_TOKENS: ColorToken[] = [

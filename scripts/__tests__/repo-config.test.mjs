@@ -23,6 +23,16 @@ describe("CI workflow", () => {
     assert.ok(group.includes("github.event.pull_request.number"), group);
     assert.ok(group.includes("github.ref"), group);
   });
+
+  it("checks out the web repo by its current name, not the old KLTN-FA26/UI redirect", () => {
+    assert.match(workflow, /^ +repository: KLTN-FA26\/fe-backoffice-stockflow-commerce$/m);
+    assert.doesNotMatch(workflow, /KLTN-FA26\/UI\b/);
+  });
+
+  it("reads the public web repo with the workflow token when WEB_REPO_TOKEN is not set", () => {
+    // An empty `token` input fails actions/checkout instead of falling back to its default.
+    assert.match(workflow, /^ +token: \$\{\{ secrets\.WEB_REPO_TOKEN \|\| github\.token \}\}$/m);
+  });
 });
 
 describe("launcher", () => {

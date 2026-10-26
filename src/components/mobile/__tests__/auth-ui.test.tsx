@@ -62,6 +62,8 @@ async function fillCredentials(
   username: string,
   password: string,
 ) {
+  // The re-login sheet starts with the signed-in username: replace it, as a worker would.
+  await user.clear(screen.getByLabelText(MOBILE_LABELS.login.username));
   await user.type(screen.getByLabelText(MOBILE_LABELS.login.username), username);
   await user.type(screen.getByLabelText(MOBILE_LABELS.login.password), password);
 }
@@ -334,6 +336,16 @@ describe("ReloginSheet", () => {
       "value",
       "draft",
     );
+  });
+
+  it("relogin sheet fills in the signed-in username", async () => {
+    // The same worker usually signs in again: only the password is left to type. The field stays
+    // editable, so someone else can still take over the phone.
+    await renderWithProviders(<ReloginSheet>{null}</ReloginSheet>, { user: ALICE });
+    await act(async () => useAuthStore.getState().markSessionExpired());
+
+    expect(screen.getByLabelText(MOBILE_LABELS.login.username)).toHaveProp("value", ALICE.username);
+    expect(screen.getByLabelText(MOBILE_LABELS.login.password)).toHaveProp("value", "");
   });
 
   it("cannot be swiped away while the session is expired", async () => {

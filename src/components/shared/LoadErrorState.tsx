@@ -20,6 +20,8 @@ export type LoadErrorStateProps = {
   onRetry?: () => void;
   /** The retry is running: the button spins and takes no second press. */
   retrying?: boolean;
+  /** A way out under "Thử lại" (ghost button), e.g. back to the first hub after a screen crashed. */
+  secondaryAction?: { label: string; onPress: () => void };
 };
 
 type Copy = { title: string; description?: string };
@@ -65,6 +67,7 @@ export function LoadErrorState({
   traceId,
   onRetry,
   retrying = false,
+  secondaryAction,
 }: LoadErrorStateProps) {
   const copy = DEFAULT_COPY[kind];
 
@@ -81,6 +84,9 @@ export function LoadErrorState({
           loading={retrying}
           onPress={onRetry}
         />
+      ) : null}
+      {secondaryAction ? (
+        <Button variant="ghost" label={secondaryAction.label} onPress={secondaryAction.onPress} />
       ) : null}
       {traceId === undefined || traceId === "" ? null : (
         <Text variant="small" tone="tertiary" mono selectable className="text-center">

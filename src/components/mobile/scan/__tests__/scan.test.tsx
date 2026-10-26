@@ -5,7 +5,7 @@
  * for the field alone, the router's `push` (those tests render no navigator).
  */
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
-import { act, render, screen, userEvent } from "@testing-library/react-native";
+import { act, render, screen, userEvent, waitFor } from "@testing-library/react-native";
 import { router } from "expo-router";
 import { renderRouter } from "expo-router/testing-library";
 import { AppState, Linking, Text } from "react-native";
@@ -539,6 +539,63 @@ describe("CameraScanner", () => {
 
     expect(closed).toHaveBeenCalledTimes(1);
     stop();
+  });
+
+  it("the scanner says when the worker chose to type instead", async () => {
+    __setCameraPermission({ granted: false, canAskAgain: true });
+    const closed = jest.fn();
+    const requestId = createScanRequestId();
+    const stop = subscribeScannerClosed(requestId, closed);
+    const onClose = jest.fn();
+    const view = await render(
+      <CameraScanner requestId={requestId} mode="single" title={LABEL} onClose={onClose} />,
+    );
+    const user = userEvent.setup();
+
+    await user.press(screen.getByRole("button", { name: scan.typeInstead }));
+    expect(onClose).toHaveBeenCalledTimes(1);
+    await view.unmount();
+
+    expect(closed).toHaveBeenCalledWith("type-instead");
+    stop();
+  });
+
+  it("a scanner closed any other way does not ask for the keyboard", async () => {
+    const closed = jest.fn();
+    const requestId = createScanRequestId();
+    const stop = subscribeScannerClosed(requestId, closed);
+    const view = await render(
+      <CameraScanner requestId={requestId} mode="single" title={LABEL} onClose={jest.fn()} />,
+    );
+
+    await view.unmount();
+
+    expect(closed).toHaveBeenCalledWith("closed");
+    stop();
+  });
+
+  it("typing instead from the camera puts the focus back in the field", async () => {
+    jest.spyOn(router, "push").mockImplementation(() => undefined);
+    const { user } = await renderField();
+    const typed = await openCamera(user);
+    nativeFocus.mockClear();
+
+    await act(async () => publishScannerClosed(typed, "type-instead"));
+    // Not while the camera screen is still sliding away: Android would drop the focus.
+    expect(nativeFocus).not.toHaveBeenCalled();
+    await waitFor(() => expect(nativeFocus).toHaveBeenCalledTimes(1));
+
+    // Closing the camera with ✕ or by reading a code leaves the keyboard down.
+    const closed = await openCamera(user);
+    nativeFocus.mockClear();
+    await act(async () => publishScannerClosed(closed, "closed"));
+    await act(
+      () =>
+        new Promise((resolve) =>
+          setTimeout(resolve, SCAN_MOBILE_LIMITS.typeInsteadFocusDelayMs + 50),
+        ),
+    );
+    expect(nativeFocus).not.toHaveBeenCalled();
   });
 
   it("asks for the camera when it may", async () => {

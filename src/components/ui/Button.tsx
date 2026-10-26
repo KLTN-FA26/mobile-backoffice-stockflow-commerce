@@ -102,7 +102,9 @@ export function Button({
       ) : Icon ? (
         <Icon size={ICON_SIZE} color={iconColor} />
       ) : null}
-      <Text weight="medium" tone={style.tone}>
+      {/* One line: on Android a label that hugs its width with a line height could wrap its last
+          word onto a clipped second line ("Đăng xuất" showed as "Đăng"). */}
+      <Text weight="medium" tone={style.tone} numberOfLines={1}>
         {label}
       </Text>
     </Pressable>

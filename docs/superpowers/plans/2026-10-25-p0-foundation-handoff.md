@@ -30,7 +30,7 @@ Chuẩn bị: BE chạy profile `dev`; `.env.local` chép từ `.env.example` v�
 20. Hub: chạm nhanh 2 lần một mục chỉ mở 1 màn; lỗi tải quyền: "Thử lại" quay và lỗi giữ tới khi có kết quả.
 21. Icon/splash vẫn là placeholder của template Expo — thay bằng nhận diện thật sau.
 22. EAS dev build Android (tài khoản Expo của người dùng): `pnpm dlx eas-cli@latest login` → `pnpm dlx eas-cli@latest build --profile development --platform android` → cài APK, chạy Metro bằng `pnpm start:dev`, xác nhận mở được dev launcher và gọi BE qua HTTP.
-23. Trước lần merge đầu: thêm secret `WEB_REPO_TOKEN` (đọc được `KLTN-FA26/UI`) và theo dõi lần chạy CI đầu (lần cache lạnh có thể ~7 phút cho coverage).
+23. Trước lần merge đầu: theo dõi lần chạy CI đầu (lần cache lạnh có thể ~7 phút cho coverage). Repo web (`KLTN-FA26/fe-backoffice-stockflow-commerce`, tên cũ `KLTN-FA26/UI`) public nên CI đọc bằng token mặc định, không cần secret; chỉ thêm `WEB_REPO_TOKEN` (quyền đọc repo web) nếu repo đó chuyển sang private.
 24. Bản preview/production: `eas env:create` cho `EXPO_PUBLIC_API_URL` (HTTPS, có `/api/v1`) ở môi trường preview và production.
 25. Bản iOS lên store lần đầu: kiểm tra cảnh báo ITMS-90683 (chuỗi quyền micro) theo ghi chú trong README.
 

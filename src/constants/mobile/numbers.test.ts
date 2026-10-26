@@ -15,7 +15,11 @@ describe("mobile number limits", () => {
   });
 
   it("keeps the scan and UI limits from the spec", () => {
-    expect(SCAN_MOBILE_LIMITS).toEqual({ dedupeWindowMs: 1500, positiveFeedbackMs: 1500 });
+    expect(SCAN_MOBILE_LIMITS).toEqual({
+      dedupeWindowMs: 1500,
+      positiveFeedbackMs: 1500,
+      typeInsteadFocusDelayMs: 400,
+    });
     expect(UI_LIMITS).toEqual({
       maxFontSizeMultiplier: 1.3,
       searchDebounceMs: 300,

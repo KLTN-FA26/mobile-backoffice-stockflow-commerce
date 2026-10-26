@@ -1,7 +1,7 @@
 import { router } from "expo-router";
 import { useEffect, useRef } from "react";
 
-import { MOBILE_ROUTES } from "@/constants/mobile";
+import { MOBILE_ROUTES, SCAN_MOBILE_LIMITS } from "@/constants/mobile";
 
 import {
   createScanRequestId,
@@ -30,6 +30,8 @@ export type UseScanCameraOptions = {
   feedback: ScanFeedback | null;
   /** Every code the camera reads for this field, as it reads it. */
   onCode: (code: string) => void;
+  /** The worker left the camera with "Nhập tay": the field should take the keyboard. */
+  onTypeInstead?: () => void;
 };
 
 /**
@@ -43,15 +45,31 @@ export type UseScanCameraOptions = {
  * signal comes from the scanner screen itself, so it covers every way out (button, code, back
  * gesture) without the field needing a navigator.
  */
-export function useScanCamera({ title, mode, feedback, onCode }: UseScanCameraOptions): () => void {
+export function useScanCamera({
+  title,
+  mode,
+  feedback,
+  onCode,
+  onTypeInstead,
+}: UseScanCameraOptions): () => void {
   const session = useRef<CameraSession | null>(null);
   // Codes arrive later: hand them to the callback of that moment, not of the opening.
   const latestOnCode = useRef(onCode);
+  const latestOnTypeInstead = useRef(onTypeInstead);
   useEffect(() => {
     latestOnCode.current = onCode;
+    latestOnTypeInstead.current = onTypeInstead;
   });
 
-  useEffect(() => () => session.current?.unsubscribe(), []);
+  // "Nhập tay" focuses the field once the camera screen has gone (see `typeInsteadFocusDelayMs`).
+  const typeInsteadTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(
+    () => () => {
+      session.current?.unsubscribe();
+      clearTimeout(typeInsteadTimer.current);
+    },
+    [],
+  );
 
   useEffect(() => {
     const open = session.current;
@@ -68,9 +86,15 @@ export function useScanCamera({ title, mode, feedback, onCode }: UseScanCameraOp
       if (mode === "single") stopCodes();
       latestOnCode.current(code);
     });
-    const stopClosed = subscribeScannerClosed(requestId, () => {
+    const stopClosed = subscribeScannerClosed(requestId, (how) => {
       stopClosed();
       if (session.current?.requestId === requestId) session.current.scannerOpen = false;
+      if (how !== "type-instead") return;
+      clearTimeout(typeInsteadTimer.current);
+      typeInsteadTimer.current = setTimeout(
+        () => latestOnTypeInstead.current?.(),
+        SCAN_MOBILE_LIMITS.typeInsteadFocusDelayMs,
+      );
     });
     const unsubscribe = () => {
       stopCodes();

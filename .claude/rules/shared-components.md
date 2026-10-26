@@ -57,9 +57,18 @@ mới có ô gõ chữ dùng `<TextField>` (từ `@/components/ui`) thay vì imp
 
 **`Sheet`:** `dismissible={false}` khoá vuốt xuống, chạm nền mờ và nút Back của Android (dùng khi một yêu cầu đang chạy; đóng bằng `open` vẫn được). `scrollable` cho nội dung có thể dài hơn
 màn hình (danh sách, form, ô lý do + bàn phím): tiêu đề và nội dung cuộn chung, sheet cao tối đa 85% cửa sổ. Không lồng `ScrollView` của riêng mình vào `Sheet`.
-Sheet tự lo a11y và chuyển động: nền là token `bg-surface` ẩn khỏi screen reader; mở ra thì đọc tiêu đề (cả Android); cả sheet nằm trong một view
-`accessibilityViewIsModal` (iOS: VoiceOver không chạm tới màn phía sau — RNTL cũng ẩn màn đó khỏi query, test kiểm màn còn mount thì dùng
-`includeHiddenElements: true`); di chuyển `MOTION_MS.standard` (180 ms).
+Sheet tự lo a11y và chuyển động: nền là token `bg-surface` ẩn khỏi screen reader; mở ra thì iOS đọc tiêu đề, Android chuyển tiêu điểm TalkBack vào tiêu đề
+(`SheetTitle`, sau `MOTION_MS.standard`); cả sheet nằm trong một view `accessibilityViewIsModal` (iOS: VoiceOver không chạm tới màn phía sau — RNTL cũng ẩn
+màn đó khỏi query, test kiểm màn còn mount thì dùng `includeHiddenElements: true`). Android không có cờ đó: mỗi `Sheet` đang mở báo vào `sheet-a11y`, và
+`ScreenBehindSheets` (`AppProviders` bọc các màn) đặt `importantForAccessibility="no-hide-descendants"` + `accessibilityElementsHidden` cho màn phía sau tới khi
+sheet cuối cùng đóng (nghiệm thu L3). Di chuyển `MOTION_MS.standard` (180 ms).
+
+`Button`: nhãn **một dòng** (`numberOfLines={1}`) — trên Android chữ co theo bề ngang có `lineHeight` có thể đẩy chữ cuối xuống dòng hai bị cắt ("Đăng xuất" chỉ hiện
+"Đăng", nghiệm thu L1). Nhãn dài hơn nút thì bị cắt bằng "…", không xuống dòng: giữ nhãn nút ngắn. `Switch`: núm dùng token `thumb` (nghiệm thu L2).
+
+`LoadErrorState`: `secondaryAction { label, onPress }` thêm một nút `ghost` dưới "Thử lại". `RouteErrorBoundary` dùng nó cho "Về trang đầu" khi màn ném lỗi lúc
+render (không phải lỗi tải: `ApiError`/`ZodError` vẫn chỉ có "Thử lại") — `router.replace` hub đầu tiên thấy được rồi `retry()`, vì điều hướng trong cùng stack
+đang lỗi không tự xoá lỗi (nghiệm thu L10).
 
 **Nội dung sheet render trong portal** (cuối `BottomSheetModalProvider` ở `AppProviders`), không nằm tại chỗ đặt `<Sheet>`: **đừng dựa vào context của route / form / tab bên trong `Sheet`** —
 `useLocalSearchParams`, `useNavigation`, `useFormContext` (react-hook-form `FormProvider`), `BottomTabBarHeightContext`… đều không có ở đó. Cần giá trị nào thì đọc ở màn rồi truyền vào

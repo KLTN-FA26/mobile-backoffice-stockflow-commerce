@@ -1,13 +1,13 @@
 # StockFlow Mobile — Back-office (Nhập hàng · Kho · Thực hiện đơn) — Design Spec
 
-| Mục                       | Giá trị                                                                                                                                                                                               |
-| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Ngày                      | 2026-10-25                                                                                                                                                                                            |
-| Trạng thái                | Chờ người dùng duyệt spec                                                                                                                                                                             |
-| Repo                      | `D:\FPTU\Capstone\UIDesign\stockflow-mobile` (git local, nhánh `main`, chưa có remote)                                                                                                                |
-| Nguồn web (FE backoffice) | `D:\FPTU\Capstone\UIDesign\stockflow-ui` — remote `KLTN-FA26/UI`; đối chiếu theo `origin/develop` = `3bae175`; checkout hiện tại `feature/shadcn-date-picker` = `30498cc`                             |
-| Nguồn BE                  | `D:\FPTU\Capstone\UIDesign\be-backoffice-stockflow-commerce` — **hợp đồng lấy theo `origin/develop` = `92bcd760`**; working tree local (`2322e785`, 2026-10-13) chậm 483 commit, không dùng làm chuẩn |
-| Nghiệp vụ                 | `D:\FPTU\docs\docs\` (BRD 18 module) — xung đột nghiệp vụ: docs thắng                                                                                                                                 |
+| Mục                       | Giá trị                                                                                                                                                                                                                         |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Ngày                      | 2026-10-25                                                                                                                                                                                                                      |
+| Trạng thái                | Chờ người dùng duyệt spec                                                                                                                                                                                                       |
+| Repo                      | `D:\FPTU\Capstone\UIDesign\stockflow-mobile` (git local, nhánh `main`, chưa có remote)                                                                                                                                          |
+| Nguồn web (FE backoffice) | `D:\FPTU\Capstone\UIDesign\stockflow-ui` — remote `KLTN-FA26/fe-backoffice-stockflow-commerce` (tên cũ `KLTN-FA26/UI`); đối chiếu theo `origin/develop` = `3bae175`; checkout hiện tại `feature/shadcn-date-picker` = `30498cc` |
+| Nguồn BE                  | `D:\FPTU\Capstone\UIDesign\be-backoffice-stockflow-commerce` — **hợp đồng lấy theo `origin/develop` = `92bcd760`**; working tree local (`2322e785`, 2026-10-13) chậm 483 commit, không dùng làm chuẩn                           |
+| Nghiệp vụ                 | `D:\FPTU\docs\docs\` (BRD 18 module) — xung đột nghiệp vụ: docs thắng                                                                                                                                                           |
 
 ---
 
@@ -282,6 +282,7 @@ Khai báo **một lần** trong `src/lib/tokens.ts` (hex, light + dark). `ThemeP
 | Viền                 | `border.default` `#DADDE1`/`#2E3034` · `border.strong` `#C5CAD1`/`#3D4045`                                                                                                   |
 | Chữ                  | `ink.primary` `#1A1B18`/`#F4F4F1` · `ink.secondary` `#5C5E58`/`#A8AAA3` · `ink.tertiary` `#8A8C85`/`#76786F` · `ink.inverse` `#FFFFFF`/`#1A1B18`                             |
 | Brand / accent       | `brand` (CTA) `#1A1B18`/`#F4F4F1` · `accent.blue` `#1E88E5`/`#4EA6F0` (info, progress, link phụ)                                                                             |
+| Chỉ mobile           | `thumb` `#FFFFFF`/`#A8AAA3` — núm `Switch`; trên Android núm nằm trên nền thẻ nên `bg.surface` mất hút ở theme tối (nghiệm thu 2026-10-26, L2)                               |
 | Semantic (không đổi) | positive `#1F9D55` · info `#2B7FC4` · warning `#D98207` · danger `#D23B3B` · neutral `#6B6E68` · muted `#9A9C95` · special `#7C5CBF`                                         |
 | Chấm / icon công cụ  | `--dot-positive` `#12A594` · `--dot-info` `#0090FF` · `--dot-warning` `#F76B15` · `--dot-danger` `#E5484D` · `--dot-special` `#8E4EC6` (chỉ cho chấm và icon, không làm chữ) |
 | Radius               | `sm` 4 (badge) · `md` 8 (card, nút, **ô nhập trên mobile** — N4) · `full`                                                                                                    |
@@ -511,7 +512,7 @@ Luật giữ nguyên của web: **chưa chạy đủ thì không được báo x
 
 ### 8.4 CI (GitHub Actions — bật khi có remote)
 
-- PR: `pnpm install --frozen-lockfile` → `pnpm run validate`; `sync:check` checkout `KLTN-FA26/UI` nhánh `develop` vào `../stockflow-ui` (cần token đọc repo nếu private).
+- PR: `pnpm install --frozen-lockfile` → `pnpm run validate`; `sync:check` checkout `KLTN-FA26/fe-backoffice-stockflow-commerce` (tên cũ `KLTN-FA26/UI`) nhánh `develop` vào `../stockflow-ui` — repo public nên dùng token mặc định của workflow; secret `WEB_REPO_TOKEN` chỉ cần nếu repo chuyển sang private.
 - Merge vào `develop`: tuỳ chọn EAS build `preview` (APK nội bộ), secret `EXPO_TOKEN`.
 
 ### 8.5 Accessibility & hiệu năng

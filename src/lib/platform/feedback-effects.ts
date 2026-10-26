@@ -7,7 +7,7 @@
  * Components reach this through `useScanFeedback`, which also applies the sound and vibration
  * switches of the account tab.
  */
-import { createAudioPlayer } from "expo-audio";
+import { createAudioPlayer, setAudioModeAsync } from "expo-audio";
 import { NotificationFeedbackType, notificationAsync } from "expo-haptics";
 
 import scanErrorTone from "../../../assets/sounds/scan-error.wav";
@@ -36,8 +36,20 @@ function report(what: string, error: unknown): void {
   if (__DEV__) console.warn(`Scan feedback: ${what}`, error);
 }
 
+// A beep is a UI sound: it plays over the music instead of pausing it. Without a mode expo-audio asks
+// Android for transient audio focus, which stopped other apps' audio at every scan.
+let audioModeSet = false;
+function mixWithOtherAudio(): void {
+  if (audioModeSet) return;
+  audioModeSet = true;
+  setAudioModeAsync({ interruptionMode: "mixWithOthers" }).catch((error: unknown) =>
+    report("could not set the audio mode", error),
+  );
+}
+
 export function playScanTone(tone: ScanTone): void {
   try {
+    mixWithOtherAudio();
     let player = players.get(tone);
     if (player === undefined) {
       player = createAudioPlayer(TONE_SOURCES[tone]);

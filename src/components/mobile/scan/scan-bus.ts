@@ -38,7 +38,10 @@ function createChannel<T>() {
 
 const codes = createChannel<string>();
 const feedbacks = createChannel<ScanFeedback>();
-const closes = createChannel<undefined>();
+/** How a scanner screen went away: the worker chose "Nhập tay", or any other way (✕, a code, back). */
+export type ScannerClose = "type-instead" | "closed";
+
+const closes = createChannel<ScannerClose>();
 
 let lastRequest = 0;
 
@@ -67,11 +70,14 @@ export function subscribeScanFeedback(
   return feedbacks.subscribe(requestId, listener);
 }
 
-/** The scanner screen of this request is gone, however it was closed (button, code, back). */
-export function publishScannerClosed(requestId: string): void {
-  closes.publish(requestId, undefined);
+/** The scanner screen of this request is gone, and how (button, code, back, or "Nhập tay"). */
+export function publishScannerClosed(requestId: string, how: ScannerClose = "closed"): void {
+  closes.publish(requestId, how);
 }
 
-export function subscribeScannerClosed(requestId: string, listener: () => void): () => void {
+export function subscribeScannerClosed(
+  requestId: string,
+  listener: (how: ScannerClose) => void,
+): () => void {
   return closes.subscribe(requestId, listener);
 }

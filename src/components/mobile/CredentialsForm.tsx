@@ -34,6 +34,8 @@ export type CredentialsFormProps<T> = {
   submit: (input: LoginRequest) => Promise<T>;
   onSuccess: (result: T) => void;
   onPendingChange?: (pending: boolean) => void;
+  /** Pre-filled and still editable: the re-login sheet starts from the signed-in username. */
+  defaultUsername?: string;
 };
 
 /**
@@ -44,10 +46,11 @@ export function CredentialsForm<T>({
   submit,
   onSuccess,
   onPendingChange,
+  defaultUsername = "",
 }: CredentialsFormProps<T>) {
   const { control, handleSubmit, formState } = useForm<LoginRequest>({
     resolver: zodResolver(loginRequestSchema),
-    defaultValues: EMPTY,
+    defaultValues: { ...EMPTY, username: defaultUsername },
     mode: "onChange",
   });
   const inFlight = useRef(false);

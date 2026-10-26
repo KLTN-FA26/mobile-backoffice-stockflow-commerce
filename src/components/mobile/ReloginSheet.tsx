@@ -35,6 +35,8 @@ export type ReloginSheetProps = {
 export function ReloginSheet({ children, requested = false, onRequestHandled }: ReloginSheetProps) {
   const queryClient = useQueryClient();
   const expired = useAuthStore((state) => state.sessionExpired);
+  // Usually the same worker signs in again: only the password is left to type.
+  const username = useAuthStore((state) => state.user?.username);
   const [pending, setPending] = useState(false);
   // The sheet owns the clock: at `expiresAt` this marks the session expired, which opens it.
   useSessionExpiry();
@@ -64,6 +66,7 @@ export function ReloginSheet({ children, requested = false, onRequestHandled }: 
           submit={(input) => reauthenticate(input, queryClient)}
           onSuccess={handleSuccess}
           onPendingChange={setPending}
+          defaultUsername={username}
         />
         {/* R21: no sign-out while a re-login runs, or the re-login could bring the session back. */}
         <Button

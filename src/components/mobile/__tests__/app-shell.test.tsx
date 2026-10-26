@@ -95,6 +95,8 @@ async function openTwoLevelsDeep() {
 async function reloginAs(user: ReturnType<typeof userEvent.setup>, who: AuthUser) {
   me.mockResolvedValue(who);
   await act(async () => useAuthStore.getState().markSessionExpired());
+  // The sheet starts with the signed-in username; another worker replaces it.
+  await user.clear(screen.getByLabelText(MOBILE_LABELS.login.username));
   await user.type(screen.getByLabelText(MOBILE_LABELS.login.username), who.username);
   await user.type(screen.getByLabelText(MOBILE_LABELS.login.password), "s3cret");
   await user.press(screen.getByRole("button", { name: MOBILE_LABELS.login.submit }));

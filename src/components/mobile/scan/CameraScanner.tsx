@@ -1,6 +1,6 @@
 import { useCameraPermissions } from "expo-camera";
 import { X } from "lucide-react-native";
-import { useContext, useEffect } from "react";
+import { useContext, useEffect, useRef } from "react";
 import { AppState, View } from "react-native";
 import { SafeAreaInsetsContext, SafeAreaView } from "react-native-safe-area-context";
 
@@ -14,6 +14,7 @@ import { CameraPermissionPrompt } from "./CameraPermissionPrompt";
 import { LiveCamera } from "./LiveCamera";
 import { publishScannerClosed } from "./scan-bus";
 
+import type { ScannerClose } from "./scan-bus";
 import type { ScanMode } from "./use-scan-camera";
 
 export type CameraScannerProps = {
@@ -57,8 +58,13 @@ export function CameraScanner({ requestId, mode, title, onClose }: CameraScanner
   const insets = useContext(SafeAreaInsetsContext);
   const [permission, requestPermission] = useCameraPermission();
   // However the screen goes (close button, a code in single mode, back gesture), the field that
-  // opened it may open the camera again.
-  useEffect(() => () => publishScannerClosed(requestId), [requestId]);
+  // opened it may open the camera again; after "Nhập tay" it also takes the keyboard.
+  const closeHow = useRef<ScannerClose>("closed");
+  useEffect(() => () => publishScannerClosed(requestId, closeHow.current), [requestId]);
+  const typeInstead = () => {
+    closeHow.current = "type-instead";
+    onClose();
+  };
 
   const closeButton = (
     // The negative margin lines the icon up with the screen edge.
@@ -85,7 +91,7 @@ export function CameraScanner({ requestId, mode, title, onClose }: CameraScanner
             <CameraPermissionPrompt
               canAskAgain={permission.canAskAgain}
               onRequest={requestPermission}
-              onTypeInstead={onClose}
+              onTypeInstead={typeInstead}
             />
           )}
         </View>

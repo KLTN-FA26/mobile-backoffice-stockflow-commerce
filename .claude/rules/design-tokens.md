@@ -47,6 +47,7 @@ Các điều dưới đây **lint không bắt** — `/design-check` và `design
 | Viền           | `border.default` `#DADDE1`/`#2E3034` · `border.strong` `#C5CAD1`/`#3D4045`                                                                                          |
 | Chữ            | `ink.primary` `#1A1B18`/`#F4F4F1` · `ink.secondary` `#5C5E58`/`#A8AAA3` · `ink.tertiary` `#8A8C85`/`#76786F` · `ink.inverse` `#FFFFFF`/`#1A1B18`                    |
 | Brand / accent | `brand` (CTA) `#1A1B18`/`#F4F4F1` · `accent.blue` `#1E88E5`/`#4EA6F0`                                                                                               |
+| Chỉ mobile     | `thumb` `#FFFFFF`/`#A8AAA3` — núm `Switch` (Android: núm tràn ra ngoài track, nằm trên nền thẻ; `bg-surface` biến mất trên thẻ tối). Hai giá trị lấy lại từ bảng    |
 | Semantic       | positive `#1F9D55` · info `#2B7FC4` · warning `#D98207` · danger `#D23B3B` · neutral `#6B6E68` · muted `#9A9C95` · special `#7C5CBF` — **không đổi giữa hai theme** |
 | Chấm / icon    | `dot-positive` `#12A594` · `dot-info` `#0090FF` · `dot-warning` `#F76B15` · `dot-danger` `#E5484D` · `dot-special` `#8E4EC6` — **chỉ** cho chấm và icon công cụ     |
 
