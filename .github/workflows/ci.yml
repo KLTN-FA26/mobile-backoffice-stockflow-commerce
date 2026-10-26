@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [develop, main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # `pnpm sync:check` reads the web repo from here (the manifest default is ../stockflow-ui).
+      STOCKFLOW_WEB_REPO: ${{ github.workspace }}/stockflow-ui
+    defaults:
+      run:
+        working-directory: stockflow-mobile
+    steps:
+      # actions/checkout refuses a path outside the workspace, so the two repos are checked out as
+      # siblings under it: this one in stockflow-mobile, the web repo in stockflow-ui. From the
+      # mobile root that is exactly ../stockflow-ui, the manifest's default location.
+      - name: Check out this repo
+        uses: actions/checkout@v4
+        with:
+          path: stockflow-mobile
+          persist-credentials: false
+
+      # The ported files are compared with the web repo's develop (port-manifest.json webRef).
+      - name: Check out the web repo
+        uses: actions/checkout@v4
+        with:
+          repository: KLTN-FA26/UI
+          ref: develop
+          path: stockflow-ui
+          token: ${{ secrets.WEB_REPO_TOKEN }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      # The manifest pins the web ref as origin/develop; point it at the commit just checked out.
+      - name: Pin origin/develop in the web repo
+        run: git -C ../stockflow-ui update-ref refs/remotes/origin/develop HEAD
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.9.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: stockflow-mobile/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate
+        run: pnpm run validate

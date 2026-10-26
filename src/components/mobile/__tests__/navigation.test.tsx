@@ -311,24 +311,32 @@ describe("hub items and route stubs", () => {
     expect(await screen.findByText(MOBILE_LABELS.portPendingDescription)).toBeOnTheScreen();
   });
 
-  it("every nav item has a route that shows its label", async () => {
-    grant(EVERY_NAV_CODE);
-    const { app } = await openSignedIn(MOBILE_ROUTES.hubs.inbound);
-    expect(await hubHeader(MOBILE_LABELS.tabs.inbound)).toBeOnTheScreen();
+  // One navigation per nav item: about 2.5 s on a quiet machine, so Jest's 5 s default runs out
+  // under coverage instrumentation or on a loaded CI runner, and the loop grows with every nav item.
+  const EVERY_ROUTE_TIMEOUT_MS = 30_000;
 
-    for (const item of NAV_GROUPS.flatMap((group) => group.items)) {
-      await act(async () => router.navigate(item.href));
-      expect(app.getPathname()).toBe(item.href);
-      expect(await screen.findByRole("header", { name: item.label })).toBeOnTheScreen();
-      expect(
-        screen.getByText(
-          item.comingSoon
-            ? MOBILE_LABELS.comingSoonDescription
-            : MOBILE_LABELS.portPendingDescription,
-        ),
-      ).toBeOnTheScreen();
-    }
-  });
+  it(
+    "every nav item has a route that shows its label",
+    async () => {
+      grant(EVERY_NAV_CODE);
+      const { app } = await openSignedIn(MOBILE_ROUTES.hubs.inbound);
+      expect(await hubHeader(MOBILE_LABELS.tabs.inbound)).toBeOnTheScreen();
+
+      for (const item of NAV_GROUPS.flatMap((group) => group.items)) {
+        await act(async () => router.navigate(item.href));
+        expect(app.getPathname()).toBe(item.href);
+        expect(await screen.findByRole("header", { name: item.label })).toBeOnTheScreen();
+        expect(
+          screen.getByText(
+            item.comingSoon
+              ? MOBILE_LABELS.comingSoonDescription
+              : MOBILE_LABELS.portPendingDescription,
+          ),
+        ).toBeOnTheScreen();
+      }
+    },
+    EVERY_ROUTE_TIMEOUT_MS,
+  );
 });
 
 describe("useNavVisibility", () => {

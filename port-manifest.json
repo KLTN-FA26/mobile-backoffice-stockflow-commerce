@@ -364,7 +364,7 @@
       "target": "src/lib/domain/status-types.ts",
       "mode": "adapted",
       "sourceBlob": "7ebcd527867fa88978a0e3ac011a17a4a847c405",
-      "note": "chỉ giữ type trạng thái/vai trò/kho"
+      "note": "chỉ giữ type trạng thái/vai trò; đã bỏ WAREHOUSE_IDS và WarehouseId (id kho mock, không ai dùng; id kho thật lấy từ API)"
     },
     {
       "source": "src/lib/format/date.ts",

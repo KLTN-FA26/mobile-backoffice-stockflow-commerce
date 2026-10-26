@@ -1,5 +1,5 @@
 /**
- * Status / role / warehouse type unions — chỉ các type mà `lifecycle.ts` và `status-map.ts` cần.
+ * Status / role type unions — chỉ các type mà `lifecycle.ts` và `status-map.ts` cần.
  * Chép nguyên khối định nghĩa từ `stockflow-ui/src/lib/mock-data.ts` (adapted: mobile không mang
  * dữ liệu mock, xem `port-manifest.json`).
  */
@@ -35,10 +35,6 @@ export type StatusDomain =
   | "conversation"
   | "rma"
   | "customer";
-
-/** 3 kho vật lý (A1: một pháp nhân, multi-warehouse). */
-export const WAREHOUSE_IDS = ["WH-HN-01", "WH-HCM-01", "WH-DN-01"] as const;
-export type WarehouseId = (typeof WAREHOUSE_IDS)[number];
 
 /** Vòng đời sản phẩm (bảng Lifecycle 01). */
 export type ProductStatus =
