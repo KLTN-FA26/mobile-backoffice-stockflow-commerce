@@ -134,4 +134,21 @@ export const MOBILE_LABELS = {
     signOut: "Đăng xuất",
     signOutConfirm: "Đăng xuất khỏi thiết bị này?",
   },
+
+  // Quét mã: ô quét (`ScanField`), màn camera (`CameraScanner`) và mục "Kiểm tra quét mã" ở tab
+  // Tài khoản. Câu chữ phản hồi của từng trạm (đúng/sai) là của web, không nằm ở đây.
+  scan: {
+    openCamera: "Mở camera quét mã",
+    typeHint: "Quét hoặc nhập mã rồi bấm Enter",
+    clear: "Xoá mã",
+    close: "Đóng",
+    permissionTitle: "Cần quyền camera để quét mã",
+    allowCamera: "Cho phép dùng camera",
+    permissionDenied: "Bạn đã tắt quyền camera. Mở Cài đặt để bật lại, hoặc nhập mã bằng tay.",
+    openSettings: "Mở Cài đặt",
+    typeInstead: "Nhập tay",
+    testTitle: "Kiểm tra quét mã",
+    testHint: "Quét thử một mã để kiểm tra camera, âm báo và rung.",
+    lastCode: "Mã vừa đọc",
+  },
 } as const;

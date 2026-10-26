@@ -1,14 +1,17 @@
 /**
- * The account tab: identity, default warehouse, theme, scan feedback switches, session and sign
- * out. The backend is the only stand-in: `GET /warehouses` at the HTTP layer (so the real query,
- * its zod schema and its error mapping run) and auth-api for the best-effort logout call.
+ * The account tab: identity, default warehouse, theme, scan feedback switches, the scan check,
+ * session and sign out. The backend is the only stand-in: `GET /warehouses` at the HTTP layer (so
+ * the real query, its zod schema and its error mapping run) and auth-api for the best-effort logout
+ * call; the scan check's camera is reached through the router's `push` (no navigator here).
  */
 import { act, screen, userEvent, waitFor } from "@testing-library/react-native";
 import MockAdapter from "axios-mock-adapter";
+import { router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
+import { AccessibilityInfo } from "react-native";
 
 import { UI_LABELS } from "@/constants";
-import { MOBILE_LABELS } from "@/constants/mobile";
+import { MOBILE_LABELS, MOBILE_ROUTES } from "@/constants/mobile";
 import { WAREHOUSE_PERMISSIONS } from "@/constants/permissions";
 
 import { api } from "@/lib/api/client";
@@ -18,9 +21,11 @@ import { meKeys } from "@/lib/auth/me-permissions";
 import { setAccessToken } from "@/lib/auth/token-store";
 import { useAppStore } from "@/lib/store/use-app-store";
 
+import { notificationAsync } from "@/test/mocks/expo-haptics";
 import { renderWithProviders } from "@/test/render";
 
 import { AccountScreen } from "../AccountScreen";
+import { publishScan } from "../scan/scan-bus";
 
 import type { AuthUser } from "@/lib/auth/auth-store";
 import type { QueryClient } from "@tanstack/react-query";
@@ -34,20 +39,22 @@ jest.mock("@/lib/auth/auth-api", () => ({
   logoutRequest: jest.fn(),
 }));
 
-// A getter, so the version can change per test while the module mock stays hoisted.
-const mockConstants: { expoConfig: { version?: string } | null } = {
+// A getter, so the version can change per test while the module mock stays hoisted. The holder
+// is `undefined` until this line runs: expo-router (the scan field's camera button) reads the
+// config while this file's imports load, before then.
+let mockConstants: { expoConfig: { version?: string } | null } | undefined = {
   expoConfig: { version: "1.2.3" },
 };
 jest.mock("expo-constants", () => ({
   __esModule: true,
   default: {
     get expoConfig() {
-      return mockConstants.expoConfig;
+      return mockConstants?.expoConfig ?? null;
     },
   },
 }));
 
-const { account } = MOBILE_LABELS;
+const { account, scan } = MOBILE_LABELS;
 const logout = jest.mocked(logoutRequest);
 const http = new MockAdapter(api);
 
@@ -102,7 +109,7 @@ beforeEach(() => {
   http.reset();
   logout.mockReset().mockResolvedValue(undefined);
   useAppStore.setState(useAppStore.getInitialState(), true);
-  mockConstants.expoConfig = { version: "1.2.3" };
+  mockConstants = { expoConfig: { version: "1.2.3" } };
 });
 
 describe("identity", () => {
@@ -337,6 +344,45 @@ describe("scan feedback", () => {
   });
 });
 
+describe("scan check", () => {
+  it("account scan check shows last code", async () => {
+    const user = userEvent.setup();
+    await renderWithProviders(<AccountScreen />, { user: ALICE, permissions: [] });
+    expect(screen.getByText(scan.testHint)).toBeOnTheScreen();
+    expect(screen.queryByText(new RegExp(`^${scan.lastCode}`))).toBeNull();
+
+    await user.type(screen.getByLabelText(scan.testTitle), "PKG-001", { submitEditing: true });
+
+    expect(screen.getByText(`${scan.lastCode}: PKG-001`)).toBeOnTheScreen();
+    expect(screen.getByLabelText(scan.testTitle)).toHaveDisplayValue("");
+    // The scan feedback runs as at a station: vibration (on by default) and the code read out.
+    expect(notificationAsync).toHaveBeenCalledWith("success");
+    expect(AccessibilityInfo.announceForAccessibility).toHaveBeenCalledWith("PKG-001");
+  });
+
+  it("the scan check reads one code with the camera", async () => {
+    const push = jest.spyOn(router, "push").mockImplementation(() => undefined);
+    const user = userEvent.setup();
+    await renderWithProviders(<AccountScreen />, { user: ALICE, permissions: [] });
+
+    await user.press(screen.getByRole("button", { name: scan.openCamera }));
+
+    expect(push).toHaveBeenCalledWith({
+      pathname: MOBILE_ROUTES.scanner,
+      params: { requestId: expect.any(String), mode: "single", title: scan.testTitle },
+    });
+    const [href] = push.mock.calls[0] ?? [];
+    const requestId =
+      typeof href === "object" && href !== null && "params" in href
+        ? String((href.params as { requestId: string }).requestId)
+        : "";
+    await act(async () => publishScan(requestId, "QR-42"));
+
+    expect(screen.getByText(`${scan.lastCode}: QR-42`)).toBeOnTheScreen();
+    push.mockRestore();
+  });
+});
+
 describe("session and version", () => {
   it.each([
     { left: 2 * HOUR_MS + 5 * MINUTE_MS + 30_000, hours: 2, minutes: 5 },
@@ -378,7 +424,7 @@ describe("session and version", () => {
   });
 
   it("shows a dash when the app version is unknown", async () => {
-    mockConstants.expoConfig = null;
+    mockConstants = { expoConfig: null };
     await renderWithProviders(<AccountScreen />, { user: ALICE, permissions: [] });
 
     expect(screen.getByText(account.versionUnknown)).toBeOnTheScreen();

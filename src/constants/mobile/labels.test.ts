@@ -127,6 +127,23 @@ describe("mobile labels", () => {
     expect(MOBILE_LABELS.account.roles([])).toBe("");
   });
 
+  it("keeps the copy of the scan field, the camera scanner and the scan check", () => {
+    expect(MOBILE_LABELS.scan).toEqual({
+      openCamera: "Mở camera quét mã",
+      typeHint: "Quét hoặc nhập mã rồi bấm Enter",
+      clear: "Xoá mã",
+      close: "Đóng",
+      permissionTitle: "Cần quyền camera để quét mã",
+      allowCamera: "Cho phép dùng camera",
+      permissionDenied: "Bạn đã tắt quyền camera. Mở Cài đặt để bật lại, hoặc nhập mã bằng tay.",
+      openSettings: "Mở Cài đặt",
+      typeInstead: "Nhập tay",
+      testTitle: "Kiểm tra quét mã",
+      testHint: "Quét thử một mã để kiểm tra camera, âm báo và rung.",
+      lastCode: "Mã vừa đọc",
+    });
+  });
+
   it("does not copy strings the web constants already carry", () => {
     // "Đang xác minh phiên đăng nhập" is AUTH_UI.verifyingSession (src/constants/auth.ts).
     expect(MOBILE_LABELS).not.toHaveProperty("bootstrap");

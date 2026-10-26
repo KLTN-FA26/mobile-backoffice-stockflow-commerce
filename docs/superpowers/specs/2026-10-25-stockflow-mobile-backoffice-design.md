@@ -232,7 +232,7 @@ Cấu hình môi trường: `app.config.ts` + EAS profile `development` / `previ
 - **Màn `scanner`** (modal, `expo-camera` `CameraView`): định dạng Code128, Code39, EAN-13/8, UPC-A/E, QR, DataMatrix.
   - Chế độ **một lần**: đọc được → đóng → trả mã về ô gọi.
   - Chế độ **liên tục** (trạm đóng gói, xếp xe): camera mở, mỗi mã đọc được gửi vào hàng đợi của trạm; cùng mã trong 1,5s bỏ qua; phản hồi hiện đè trên camera.
-  - Cơ chế trả kết quả: `scan-bus` (zustand không persist) theo `requestId` của lần mở.
+  - Cơ chế trả kết quả: `scan-bus` (module in-memory, không persist) theo `requestId` của lần mở.
   - Từ chối quyền camera → thông báo + nút mở Cài đặt; vẫn gõ tay được.
 - **Phản hồi** (`useScanFeedback`): giữ ngữ nghĩa web — đúng: xanh + tự tắt sau 1,5s; sai: đỏ + giữ tới lần quét sau. **Thêm haptics** (đúng: `notificationAsync(Success)`, sai: `notificationAsync(Error)`) — lý do: kho ồn, người dùng không nhìn màn hình. Âm báo qua `expo-audio` (2 file âm ngắn tương ứng 1046Hz/90ms và 220Hz/320ms của web), tôn trọng cờ `muted`. Công tắc âm thanh/rung ở tab Tài khoản (web có cờ nhưng không có UI). Screen reader: `AccessibilityInfo.announceForAccessibility`.
 - **Giữ nguyên logic nghiệp vụ của web**:

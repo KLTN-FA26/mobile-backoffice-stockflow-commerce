@@ -49,7 +49,7 @@ Cùng chữ ký với `usePageConfig` của web: `{ config, updateConfig }`, **m
 ## zustand — `use-app-store`
 
 Theme (Sáng/Tối/Hệ thống), tắt tiếng, rung — **theo máy**, người đăng nhập sau thấy lại. Kho mặc định — **theo người dùng**. Tất cả persist qua kv-store.
-`auth-store` **không persist token**. `scan-bus` (kết quả quét) là zustand **không persist**.
+`auth-store` **không persist token**. `scan-bus` (kết quả quét, `src/components/mobile/scan/scan-bus.ts`) là module pub/sub in-memory, **không persist**.
 
 - **Kho mặc định (N9)** chỉ là giá trị **điền sẵn** cho bộ lọc kho; không đổi hợp đồng API, không gửi `X-Warehouse-Id`.
 - Lưu **theo người dùng**: `defaultWarehouseByUser: Record<userId, warehouseId>`, ghi bằng `setDefaultWarehouse(userId, warehouseId | null)` (`null` xoá khoá). Lý do: trên máy kho

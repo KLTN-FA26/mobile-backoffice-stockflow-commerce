@@ -9,7 +9,8 @@ export { RouteErrorBoundary as ErrorBoundary };
 
 /**
  * The signed-in area. A session running out shows a banner on top; an expired one (or the banner's
- * button) opens the re-login sheet over the open screen, which stays mounted underneath.
+ * button) opens the re-login sheet over the open screen, which stays mounted underneath. The camera
+ * scanner opens full screen over whichever screen holds the scan field.
  */
 export default function SignedInLayout() {
   const [reloginRequested, setReloginRequested] = useState(false);
@@ -17,7 +18,9 @@ export default function SignedInLayout() {
   return (
     <ReloginSheet requested={reloginRequested} onRequestHandled={() => setReloginRequested(false)}>
       <SessionExpiryBanner onRelogin={() => setReloginRequested(true)}>
-        <Stack screenOptions={{ headerShown: false }} />
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="scanner" options={{ presentation: "fullScreenModal" }} />
+        </Stack>
       </SessionExpiryBanner>
     </ReloginSheet>
   );
